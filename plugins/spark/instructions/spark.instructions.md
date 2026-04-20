@@ -1,0 +1,66 @@
+---
+applyTo: "**/.specs/**"
+---
+
+# Spark Agents — Required for `.specs/` Projects
+
+## Critical Rules
+
+- **ALWAYS** use the appropriate spark agent when working with files in a `.specs/` folder. Never edit these files directly — route to the correct agent below.
+  - Warn the developer and get approval before proceeding without a spark agent.
+
+### Agent Routing
+
+| Task | Agent |
+|---|---|
+| Create or update `PRD.md` | **prd-editor** |
+| Review / validate `PRD.md` | **prd-reviewer** |
+| Create or update `ARCHITECTURE.md` (and supporting ADRs) | **architecture-editor** |
+| Review / validate `ARCHITECTURE.md` | **architecture-reviewer** |
+| Add a single ADR or small set of ADRs | **adr-editor** |
+| Review / validate ADR files | **adr-reviewer** |
+| Create or update feature specs (`FEAT-NNN-*.md`) | **feature-editor** |
+| Review / validate feature specs | **feature-reviewer** |
+| Resolve inline review comments (`.comments.json` sidecars on any spark document, including `.testplan.md`) | **comments-editor** |
+| Implement a feature using TDD (red-green-refactor) | **tdd-agent** |
+| Review test suite quality for feature specs | **tdd-reviewer** |
+| Orchestrate multi-step spec-driven development workflows | **spark-developer** |
+
+### When Multiple Agents Could Apply
+- For **code generation / implementation**, use **spark-developer** (it orchestrates sub-agents including tdd-agent).
+- For **standalone ADR additions** to a project that already has `ARCHITECTURE.md`, prefer **adr-editor** over architecture-editor.
+- For **full architecture rewrites** (new project or major overhaul), use **architecture-editor**.
+- For **test plan review or viewing**, use **tdd-reviewer** (read-only validation of test suite quality).
+- Distinguish between "implement" (use **tdd-agent** via **spark-developer**) and "build"/"code up" (ad-hoc code generation, which falls outside the spec-driven workflow).
+
+---
+
+## Key Workflows
+
+### Reviewer-to-Editor Delegation
+When a reviewer agent (prd-reviewer, architecture-reviewer, adr-reviewer, feature-reviewer, tdd-reviewer) flags issues, the findings are returned to **spark-developer**, which routes fixes back to the corresponding editor:
+- `prd-reviewer` issues → `prd-editor`
+- `architecture-reviewer` issues → `architecture-editor`
+- `adr-reviewer` issues → `adr-editor`
+- `feature-reviewer` issues → `feature-editor`
+- `tdd-reviewer` issues → `tdd-agent` (with one exception: see below)
+
+**Special case — T16/T17 flags from `tdd-reviewer`:** If `tdd-reviewer` flags T16 (missing test plan file) or T17 (coverage map mismatch), delegating back to `tdd-agent` will re-run the full TDD cycle from Step 4 (test plan approval gate), not just update the test plan.
+
+### TDD-to-ADR Handoff
+After `tdd-agent` completes implementation, it surfaces ADR candidates (decisions made or crystallized during TDD). **spark-developer** presents these candidates to the user with a prompt: "These decisions were surfaced during TDD. Create ADRs for them?" If the user accepts, **spark-developer** invokes `adr-editor` for each candidate in sequence, then offers to add them to `ARCHITECTURE.md`.
+
+### Parallel ADR Review
+When reviewing multiple ADRs, **spark-developer** invokes one `adr-reviewer` subagent **per ADR file in parallel** to validate them simultaneously, then collects and returns all findings to the user.
+
+### Batch Feature Implementation
+To implement all approved features:
+1. **spark-developer** scans `{docs-root}/feature/` for all `FEAT-*.md` files with `Status: Approved`
+2. Creates a todo list (one entry per feature)
+3. Invokes `tdd-agent` for each feature **sequentially** (never in parallel — each run modifies the codebase, and the test suite must stay green between features)
+
+### `prd-editor` Review Mode
+Although `prd-reviewer` is the read-only review agent, `prd-editor` also has an internal review path: if the user asks to "review the PRD," `prd-editor` skips the interview and generation steps and runs its review checklist directly. Both paths are valid; the choice depends on whether the user wants to make edits in the same session.
+
+### `feature-editor` Review Mode
+Although `feature-reviewer` is the read-only review agent, `feature-editor` also has an internal review path: if the user asks to "review the feature specs" and wants to make edits in the same session, `feature-editor` runs its review checklist (Step 5) directly, skipping the interview and generation steps. Choose `feature-reviewer` for standalone read-only review and `feature-editor` when edits are expected in the same session.

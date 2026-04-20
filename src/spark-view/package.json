@@ -1,0 +1,164 @@
+{
+  "name": "spark-view",
+  "displayName": "SparkView",
+  "description": "Inline feedback and comments on markdown files stored in Git",
+  "version": "1.0.1",
+  "publisher": "busa-dave-13",
+  "license": "MIT",
+  "icon": "media/spark-view-icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/busadave13/SpecIt.git"
+  },
+  "keywords": [
+    "markdown",
+    "review",
+    "comments",
+    "feedback"
+  ],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onCommand:sparkView.openPreview",
+    "onView:sparkView.files"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sparkView",
+          "title": "SparkView",
+          "icon": "media/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "sparkView": [
+        {
+          "id": "sparkView.files",
+          "name": "SparkView Files"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "sparkView.openPreview",
+        "title": "SparkView: Review and Comment",
+        "category": "SparkView",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "sparkView.refreshFiles",
+        "title": "Refresh",
+        "category": "SparkView",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "sparkView.toggleCommentSidebar",
+        "title": "SparkView: Toggle Comment Sidebar",
+        "category": "SparkView",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "sparkView.setFolderStatus",
+        "title": "Set Status for All Documents",
+        "category": "SparkView",
+        "icon": "$(tag)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "sparkView.openPreview",
+          "when": "resourceLangId == markdown",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "sparkView.openPreview",
+          "when": "resourceExtname == .md",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "sparkView.refreshFiles",
+          "when": "view == sparkView.files",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "sparkView.setFolderStatus",
+          "when": "view == sparkView.files && viewItem == folder",
+          "group": "inline@1"
+        },
+        {
+          "command": "sparkView.setFolderStatus",
+          "when": "view == sparkView.files && viewItem == folder",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "SparkView",
+      "properties": {
+        "sparkView.preview.openLocation": {
+          "type": "string",
+          "enum": [
+            "activeGroup",
+            "beside"
+          ],
+          "enumDescriptions": [
+            "Open the SparkView preview as a tab in the active editor group (full editor width).",
+            "Open the SparkView preview beside the active editor in a split column."
+          ],
+          "default": "activeGroup",
+          "description": "Where to open the SparkView preview when an editor is already active.",
+          "scope": "window"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "clean": "node -e \"const fs = require('node:fs'); for (const target of ['dist', 'out', 'publish', '.vscode-test']) { fs.rmSync(target, { recursive: true, force: true }); } for (const entry of fs.readdirSync('.')) { if (entry.endsWith('.vsix')) { fs.rmSync(entry, { force: true }); } }\"",
+    "vscode:prepublish": "npm run esbuild-production",
+    "compile": "tsc -p ./tsconfig.json",
+    "watch": "tsc -watch -p ./tsconfig.json",
+    "esbuild": "node ./esbuild.config.mjs",
+    "esbuild-production": "node ./esbuild.config.mjs --production",
+    "esbuild-watch": "node ./esbuild.config.mjs --watch",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint . --ext .ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "node ./scripts/package-vsix.mjs"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.28.0",
+    "eslint": "^8.55.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "5.3.3"
+  },
+  "dependencies": {
+    "markdown-it": "^14.1.1",
+    "simple-git": "^3.21.0",
+    "uuid": "^9.0.1"
+  }
+}

@@ -1,0 +1,83 @@
+name: Release SparkView VSIX
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag (defaults to spark-view-v<package.json version>)"
+        required: false
+        type: string
+      prerelease:
+        description: "Mark the GitHub release as a pre-release"
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: "Create the GitHub release as a draft"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release VSIX
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/spark-view
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: src/spark-view/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Read extension metadata
+        id: meta
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "vsix=$name-$version.vsix" >> "$GITHUB_OUTPUT"
+
+      - name: Package VSIX
+        run: npm run package
+
+      - name: Resolve release tag
+        id: tag
+        run: |
+          input_tag="${{ inputs.release_tag }}"
+          if [ -n "$input_tag" ]; then
+            tag="$input_tag"
+          else
+            tag="${{ steps.meta.outputs.name }}-v${{ steps.meta.outputs.version }}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.vsix }}
+          path: src/spark-view/publish/${{ steps.meta.outputs.vsix }}
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: SparkView v${{ steps.meta.outputs.version }}
+          generate_release_notes: true
+          prerelease: ${{ inputs.prerelease }}
+          draft: ${{ inputs.draft }}
+          files: src/spark-view/publish/${{ steps.meta.outputs.vsix }}

@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install SPARK",
+      "detail": "Copies all SPARK plugin files (agents, skills) to ~/.copilot, overwriting existing files",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "robocopy .\\plugins\\spark $env:USERPROFILE\\.copilot /E /XF plugin.json; if ($LASTEXITCODE -le 7) { exit 0 } else { exit 1 }"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "rsync -av --exclude=plugin.json plugins/spark/ ~/.copilot/"
+        ]
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "SparkView: Package VSIX",
+      "detail": "Bumps the isolated extension patch version and packages src\\spark-view\\publish\\spark-view-<version>.vsix",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "if (!(Test-Path .\\src\\spark-view\\node_modules)) { npm install --prefix .\\src\\spark-view }; npm --prefix .\\src\\spark-view version patch --no-git-tag-version; npm --prefix .\\src\\spark-view run package"
+        ]
+      },
+      "osx": {
+        "command": "bash",
+        "args": [
+          "-c",
+          "if [ ! -d src/spark-view/node_modules ]; then npm install --prefix ./src/spark-view; fi; npm --prefix ./src/spark-view version patch --no-git-tag-version; npm --prefix ./src/spark-view run package"
+        ]
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    }
+  ]
+}

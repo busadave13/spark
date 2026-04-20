@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git mv *)",
+      "Bash(tee /tmp/specit-files.txt)",
+      "Bash(grep -v \":0$\")"
+    ]
+  }
+}
