@@ -6,7 +6,9 @@
 > **Created**: 2026-04-13<br>
 > **Last Updated**: 2026-04-20<br>
 > **Owner**: Dave Harding<br>
+> **Namespace**: Mockery<br>
 > **Project**: Mockery<br>
+> **Project Type**: dotnet-webapi<br>
 > **Status**: Draft
 
 ---

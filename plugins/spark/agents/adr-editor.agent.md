@@ -98,7 +98,7 @@ For multiple decisions at once, collect the above for each before writing anythi
 
 ## Step 4: Write ADR file(s)
 
-Read `./references/adr-template.md` before writing.
+Read `references/adr-template.md` before writing.
 
 ### File naming and location
 
@@ -144,7 +144,7 @@ Every ADR must include:
 | Revisit Conditions | Optional — when this decision should be re-evaluated |
 | Related Decisions | Links to other ADRs that materially affect this one (if any) |
 
-See `./references/adr-template.md` for the exact section order and formatting.
+See `references/adr-template.md` for the exact section order and formatting.
 
 ---
 
@@ -208,5 +208,5 @@ Then prompt the user:
 
 | File | When to read |
 |---|---|
-| `./references/adr-template.md` | Before writing any ADR — exact section order and formatting |
-| `./references/adr-section-guide.md` | When the decision involves significant trade-offs or multiple rejected alternatives
+| `references/adr-template.md` | Before writing any ADR — exact section order and formatting |
+| `references/adr-section-guide.md` | When the decision involves significant trade-offs or multiple rejected alternatives

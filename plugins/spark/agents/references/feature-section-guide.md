@@ -64,7 +64,7 @@ Use 3-digit zero-padded numbering. The slug after the number should be kebab-cas
   - New features start as `Draft`
   - Any update to a non-Draft feature resets Status to `Draft`
   - Only the user may set `Approved`
-  - Only `tdd-agent` may set `Implemented`, except when `feature-editor` determines during codebase exploration (Step 3) that the feature is already fully implemented — in that case `feature-editor` may set `Implemented` directly
+  - Only `tdd-developer` may set `Implemented`, except when `feature-editor` determines during codebase exploration (Step 3) that the feature is already fully implemented — in that case `feature-editor` may set `Implemented` directly
 
 ---
 

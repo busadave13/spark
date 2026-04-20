@@ -8,6 +8,7 @@
 > **Owner**: {OWNER}<br>
 > **Namespace**: {NAMESPACE}<br>
 > **Project**: {PROJECT_NAME}<br>
+> **Project Type**: {PROJECT_TYPE}<br>
 > **Status**: Draft
 
 ---

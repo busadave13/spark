@@ -13,7 +13,7 @@ Validates the test suite for one or more `FEAT-NNN-*.md` feature specs using a
 deterministic checklist. Produces a per-feature findings table and reports issues
 by severity.
 
-This agent is read-only. It reviews test files only. To apply fixes, use `tdd-agent`.
+This agent is read-only. It reviews test files only. To apply fixes, use `tdd-developer`.
 To review the feature spec itself, use `feature-reviewer`.
 
 ---
@@ -134,4 +134,4 @@ If all checks pass across all reviewed features, report:
 ```
 
 This agent is read-only. It does not apply fixes or modify test files or feature specs.
-To apply fixes or complete a TDD cycle, use `tdd-agent`.
+To apply fixes or complete a TDD cycle, use `tdd-developer`.

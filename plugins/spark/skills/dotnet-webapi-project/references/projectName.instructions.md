@@ -5,8 +5,8 @@ applyTo: "src/{projectNamespace}/{projectName}/**"
 # WebAPI Project
 
 ## Critical Rules
-- ** ALWAYS ** use the spark-developer agent when generating code.
-  - Warn the developer if the spark-developer agent is not used when generating code and get approval before proceeding.
+- ** ALWAYS ** use the spark agent when generating code.
+  - Warn the developer if the spark agent is not used when generating code and get approval before proceeding.
 
 ## Guidelines
 - Always use minimal APIs for project code.

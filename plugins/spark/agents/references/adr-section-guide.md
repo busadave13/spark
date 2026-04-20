@@ -19,7 +19,8 @@ document a supersession clearly.
 5. [Rationale](#3-rationale)
 6. [Alternatives Considered](#4-alternatives-considered)
 7. [Consequences](#5-consequences)
-8. [Related Decisions](#6-related-decisions)
+8. [Revisit Conditions](#6-revisit-conditions)
+9. [Related Decisions](#7-related-decisions)
 
 ---
 
@@ -243,7 +244,48 @@ trade-offs signals that the decision wasn't thought through.
 
 ---
 
-## 6. Related Decisions
+## 6. Revisit Conditions
+
+### What it contains
+The specific conditions under which this decision should be re-evaluated. Acts as a
+trigger list so future contributors know when the recorded rejection reasons may no
+longer hold.
+
+### Guidance
+Be concrete. Vague triggers like "if requirements change" provide no signal.
+Anchor each condition to something observable: a library reaching GA, a metric
+crossing a threshold, a new consumer type appearing, a deprecated API being removed.
+
+**Good:**
+```markdown
+- The MCP spec adds a stable streaming transport, removing the current need to fall
+  back to long-polling for large responses.
+- A second non-AI consumer (e.g. a CI pipeline) needs to call these tools — REST may
+  be cheaper to add than to wrap MCP.
+- p95 tool-invocation latency exceeds 500ms, which the current MCP transport cannot
+  improve without a protocol change.
+```
+
+**Bad:**
+```markdown
+- If something changes
+- If we get more users
+- If performance is bad
+```
+
+### Anti-patterns
+- Catch-all conditions ("if anything changes")
+- Conditions that are really nice-to-haves ("if a better library appears")
+- Listing the original rationale negated ("if MCP is no longer good") — restate the
+  *observable* signal that would make the rationale fail
+
+This section is optional — omit it if no realistic trigger exists.
+
+**Target length:** 2–4 bullets.
+
+---
+
+## 7. Related Decisions
 
 ### What it contains
 Links to other ADRs that this decision depends on, enables, or constrains.
@@ -253,7 +295,7 @@ Use this to build a decision graph. Agents following one ADR can discover relate
 constraints they need to respect.
 
 ```markdown
-## 6. Related Decisions
+## 7. Related Decisions
 
 - [ADR-0002: Read-Only Operations in v1](ADR-0002-read-only-operations-v1.md) —
   constrains which MCP tools are implementable

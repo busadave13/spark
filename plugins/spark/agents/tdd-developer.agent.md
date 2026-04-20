@@ -1,5 +1,5 @@
 ---
-name: tdd-agent
+name: tdd-developer
 description: "Read/write agent that implements an Approved feature spec using strict red-green-refactor TDD. Reads FEAT-NNN-*.md, ARCHITECTURE.md, ADRs, and existing test infrastructure as context. Writes a FEAT-NNN.testplan.md, test files, and implementation stubs; updates the feature spec Status to Implemented when all ACs have passing tests. Phases: ambiguity check → test plan (human gate) → stubs → red → green → refactor → traceability check. Triggers: 'implement with TDD', 'TDD this feature', 'write tests first', 'red green refactor', 'tdd FEAT-NNN'. Requires an Approved FEAT-NNN-*.md under {docs-root}/feature/. Use feature-editor to create a spec first if one does not exist."
 model: Claude Opus 4.6 (copilot)
 tools: [execute, read, edit, search, todo, agent]
@@ -7,7 +7,7 @@ user-invocable: false
 disable-model-invocation: false
 ---
 
-# TDD Agent
+# TDD Developer Agent
 
 Implements a feature spec using strict red-green-refactor TDD. Performs an ambiguity check
 before writing any tests, produces a reviewable test plan, then executes the full TDD cycle
@@ -54,7 +54,7 @@ and the suite is green.
      return the first whose `**Status**` is not `Implemented`.
 6. Read the feature spec. Check `**Status**`. If not `Approved`, stop:
    > "⛔ [FEAT-NNN] has Status: {status}. Set Status to `Approved` in
-   > `{docs-root}/feature/FEAT-{NNN}-{name}.md`, then run tdd-agent again."
+   > `{docs-root}/feature/FEAT-{NNN}-{name}.md`, then run tdd-developer again."
 
 ---
 
@@ -77,25 +77,33 @@ Report what was found:
 
 ## Step 2b: .NET project initialization (conditional)
 
-After loading context in Step 2, check whether the project uses a .NET tech stack.
+After loading context in Step 2, read the `**Project Type**` field from the metadata header of
+`{docs-root}/ARCHITECTURE.md`. This field is required and must be exactly one of:
 
-**Detection:** Read the `Tech Stack` section of `ARCHITECTURE.md`. If it contains `.NET`,
-`ASP.NET`, `C#`, or `dotnet`, treat this as a .NET project.
+- `dotnet-webapi`
+- `dotnet-blazor`
 
-**If .NET project:**
+**If the field is missing or not one of the allowed values**, stop:
+
+> "⛔ ARCHITECTURE.md is missing a valid `Project Type`. Run architecture-editor to set
+> `**Project Type**` to `dotnet-webapi` or `dotnet-blazor`, then run tdd-developer again."
+
+**Otherwise** (valid `{projectType}` resolved):
 
 1. Resolve `{repo-root}` from the `git rev-parse --show-toplevel` result in Step 1.
 2. Check whether `{repo-root}/.github/instructions/{projectName-lowercase}.instructions.md`
    exists.
    - **File present** — skip initialization, continue to Step 3.
-   - **File absent** — invoke the `dotnet-webapi-project` skill:
+   - **File absent** — invoke the project-initialization skill that matches `{projectType}`:
+     - `dotnet-webapi` → skill `dotnet-webapi-project`
+     - `dotnet-blazor` → skill `dotnet-blazor-project`
+
+     Steps:
      - Ask the user for `projectNamespaceName` if not already provided.
-     - Invoke `runSubagent` with skill `dotnet-webapi-project`, passing `projectName` and
+     - Invoke `runSubagent` with the matching skill, passing `projectName` and
        `projectNamespaceName`.
      - Wait for the skill to complete before continuing.
-     - Report: `"✅ .NET project initialized: .github/instructions/{projectName-lowercase}.instructions.md created."`
-
-**If not a .NET project:** skip this step entirely and continue to Step 3.
+     - Report: `"✅ .NET project initialized ({projectType}): .github/instructions/{projectName-lowercase}.instructions.md created."`
 
 ---
 

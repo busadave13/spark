@@ -78,6 +78,20 @@ Run `git config user.name` and store the result as `{resolved-owner}`. If empty,
 
 Ask the user for the namespace (e.g., a team name, product line, or organizational grouping) and store the result as `{resolved-namespace}`.
 
+### Resolve Project Type
+
+Determine `{resolved-project-type}` — required; allowed values are exactly `dotnet-webapi` or `dotnet-blazor`.
+
+1. **Update pass**: read the `**Project Type**` field from the existing `ARCHITECTURE.md` header.
+   - If present and valid, reuse it as `{resolved-project-type}`.
+   - If missing or invalid, prompt the user (re-ask on any value other than `dotnet-webapi` or `dotnet-blazor`).
+2. **New document**: prompt the user:
+   > "What is the project type? Allowed values: `dotnet-webapi` or `dotnet-blazor`."
+   Re-ask until the response matches exactly one of the allowed values.
+
+This field is read by downstream agents (e.g., tdd-developer) to choose the correct
+project-initialization skill. Do not infer it from Tech Stack content — it must be set explicitly.
+
 ## Step 4: Architecture flow
 
 ### Step 4.1: Prerequisite gate
@@ -96,10 +110,10 @@ Read these in a single parallel call:
 - `{docs-root}/ARCHITECTURE.md` metadata block and section headings, if it exists
 - scan `{docs-root}/adr/` for `ADR-*.md` files
 - read ADR metadata blocks and titles
-- `./references/architecture-template.md`
-- `./references/architecture-section-guide.md`
-- `./references/adr-template.md`
-- `./references/adr-section-guide.md`
+- `references/architecture-template.md`
+- `references/architecture-section-guide.md`
+- `references/adr-template.md`
+- `references/adr-section-guide.md`
 
 Determine the next ADR number by scanning the discovered ADR files for the highest existing number and incrementing it. If none exist, start at `0001`.
 
@@ -149,7 +163,7 @@ If this is an update, summarize the current architecture briefly and ask what ch
 
 ### Step 4.5: Write `ARCHITECTURE.md`
 
-Write to `{docs-root}/ARCHITECTURE.md` and follow `./references/architecture-template.md` precisely — do not change section order or add new sections.
+Write to `{docs-root}/ARCHITECTURE.md` and follow `references/architecture-template.md` precisely — do not change section order or add new sections.
 
 - Do not change section order or headings.
 - Replace every placeholder with real content.
@@ -175,6 +189,7 @@ on the first line — nothing before it, nothing else on that line. The document
 > **Owner**: {resolved-owner}<br>
 > **Namespace**: {resolved-namespace}<br>
 > **Project**: [project name]<br>
+> **Project Type**: {resolved-project-type}<br>
 > **Status**: Draft
 ```
 

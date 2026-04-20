@@ -300,7 +300,7 @@ on the first line — nothing before it, nothing else on that line. The document
 - Preserve `Created`.
 - Preserve `Owner` unless it is missing and must be backfilled.
 - Do not touch `Version` or `Last Updated` here — Step 7 bumps the version once as the final action.
-- Valid statuses are `Draft`, `Approved`, `Implemented`; only the user may set `Approved`. `Implemented` may be set by `tdd-agent` or by this agent when codebase exploration confirms the feature is fully implemented (see Step 3 — Assess implementation completeness).
+- Valid statuses are `Draft`, `Approved`, `Implemented`; only the user may set `Approved`. `Implemented` may be set by `tdd-developer` or by this agent when codebase exploration confirms the feature is fully implemented (see Step 3 — Assess implementation completeness).
 
 ### Section requirements
 
@@ -359,4 +359,4 @@ For an updated feature:
 
 Always include any blockers or upstream conflicts that still need user action.
 
-After feature specs are approved, suggest using `tdd-agent` to implement the feature.
+After feature specs are approved, suggest using `tdd-developer` to implement the feature.
