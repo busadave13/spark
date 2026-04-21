@@ -231,7 +231,8 @@ Wait for the user to resolve all blockers. Confirmed flags require no further in
 
 Once all blockers are resolved, rewrite the vague AC text in the feature spec to reflect
 the concrete values agreed. Do this before producing the test plan. Bump the minor version
-and set `**Last Updated**` to today. Do not change `**Status**`.
+by 1 (after `X.9`, roll to `(X+1).0`, e.g. `1.9` → `2.0`) and set `**Last Updated**` to
+today. Do not change `**Status**`.
 
 The spec is the source of truth — resolved values must live there, not only in conversation.
 
@@ -602,8 +603,13 @@ gate before `Implemented` can be set.
 Update `{docs-root}/feature/FEAT-{NNN}-{name}.md`:
 
 - Set `**Status**` to `Implemented`
-- Bump the minor version by 1
+- Bump the minor version by 1 (after `X.9`, roll to `(X+1).0`, e.g. `1.9` → `2.0`)
 - Set `**Last Updated**` to today
+
+This is the canonical writer for `Status: Implemented` on a feature spec. Other agents
+(in particular `feature-editor`) must not set this status — the only other supported path
+is the `/spark-status implement` skill for manual cleanup, which applies the same
+version-bump rule.
 
 Only set `Implemented` if Step 10 confirmed every AC is covered, the required approved
 scaffolding exists, and the `tdd-reviewer` gate from Step 10d returned `PASS` (or was

@@ -29,12 +29,14 @@ Match the user's intent to the correct subagent or skill. Never run a skill your
 |---|---|---|---|
 | Create or update a PRD | `prd-editor` | subagent | "Create a PRD for WeatherService" |
 | Review a PRD | `prd-reviewer` | subagent | "Review the PRD for Mockery" |
+| Review a PRD **and apply edits in the same session** | `prd-editor` (Review mode, Step 3a) | subagent | "Review the Mockery PRD and fix issues" |
 | Create or update architecture | `architecture-editor` | subagent | "Write the architecture for Checkout" |
 | Review architecture | `architecture-reviewer` | subagent | "Review ARCHITECTURE.md for PaymentService" |
 | Create an ADR | `adr-editor` | subagent | "Add an ADR for choosing PostgreSQL" |
 | Review ADRs | `adr-reviewer` | subagent (parallel) | "Review the ADRs in the XPCi project" |
 | Create a feature spec | `feature-editor` | subagent | "Create a feature spec for user login" |
 | Review feature specs | `feature-reviewer` | subagent | "Review FEAT-001 in Mockery" |
+| Review feature specs **and apply edits in the same session** | `feature-editor` (Review mode, Step 5) | subagent | "Review FEAT-001 in Mockery and fix issues" |
 | Implement a feature with TDD | `tdd-developer` | subagent | "Implement FEAT-003 using TDD" |
 | Review test suite quality | `tdd-reviewer` | subagent | "Review tests for FEAT-003 in Mockery" |
 | Review or show a test plan | `tdd-reviewer` | subagent | "Show me the test plan for FEAT-003" |
@@ -206,9 +208,14 @@ When a reviewer agent returns findings that recommend changes:
    | `feature-reviewer` | `feature-editor` |
    | `tdd-reviewer` | `tdd-developer` |
 
-   When `tdd-reviewer` flags T16 (missing test plan file) or T17 (coverage map mismatch),
-   delegating to `tdd-developer` will re-run the full TDD cycle from Step 4. Warn the user
-   that this means re-approving the test plan before any fixes are applied.
+   When `tdd-reviewer` returns `BLOCK` findings, delegating to `tdd-developer` resumes
+   the appropriate phase of the TDD cycle. Two of the BLOCK codes have stronger semantics:
+   `T16` (missing test plan file) and `T17` (coverage map mismatch) require re-running the
+   full TDD cycle from Step 4 (test plan approval gate). Warn the user that this means
+   re-approving the test plan before any fixes are applied. All other BLOCK codes
+   (`T01`–`T05`, `T14`, `C01`, `C02`, `C04`) re-enter at the relevant red/green/refactor
+   step without re-approval. `WARN` findings are advisory and do not require re-routing
+   unless the user explicitly asks to address them.
 
 4. **Never attempt to apply review fixes yourself.** Always route approved changes through the correct subagent.
 

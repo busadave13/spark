@@ -167,7 +167,12 @@ During codebase exploration, compare the feature spec's acceptance criteria, API
 4. The spec itself is accurate and needs no content updates to align with the codebase.
 5. The feature's current `Status` is not already `Implemented`.
 
-If all conditions are met, record this in the feature context packet as `implementationComplete: true`. This flag is consumed in Step 7 (Finalise) to set the status to `Implemented`.
+If all conditions are met, surface this finding in the report at Step 8: tell the user
+the codebase already implements every AC and recommend running `/spark-status implement`
+on the feature spec (or, if the user wants the full TDD audit trail, running
+`tdd-developer` against the existing implementation). `feature-editor` itself does **not**
+write `Status: Implemented` — that transition is owned by `tdd-developer` (after its
+`tdd-reviewer` gate passes) and by the `/spark-status implement` skill.
 
 If **any** spec content needs updating to match the codebase (type names, signatures, missing fields, etc.), the feature is **not** fully implemented from a spec perspective — fix the spec first, and the status remains `Draft` until the next review pass.
 
@@ -339,8 +344,11 @@ This is the **only** place the version is bumped. One bump, once, at the very en
 
 - **Created** in this pass → version is already `1.0`. Do not bump.
 - **Updated** in this pass (any change at all, for any reason) → increment the minor digit by 1. After `X.9`, roll to `(X+1).0` (e.g. `1.0` → `1.1`, `1.9` → `2.0`). Set `**Last Updated**` to today. Set `**Status**` to `Draft`.
-- **Implementation-complete with no spec changes** → if the feature context packet has `implementationComplete: true` and **no content edits were made** in this pass, set `**Status**` to `Implemented` and `**Last Updated**` to today. Bump the minor version by 1. Do not reset status to `Draft`.
 - **Not changed** → do not bump.
+
+> Status transitions to `Implemented` are owned by `tdd-developer` (after its
+> `tdd-reviewer` gate passes) or by the `/spark-status implement` skill. `feature-editor`
+> does not write `Status: Implemented` itself.
 
 If multiple features were updated in the same pass, bump each independently.
 

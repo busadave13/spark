@@ -183,4 +183,5 @@ For `status`, print the current state plus the prerequisite chain:
 
 Manual editing of the metadata block is still valid. If the user explicitly prefers to
 edit the file by hand, do not block them — remind them to bump `**Version**` and update
-`**Last Updated**` per the rules in `plugins/spark/instructions/spark.instructions.md`.
+`**Last Updated**` per the rules in `plugins/spark/instructions/spark.instructions.md`
+(see also the version-bump rule in Step 5 of this skill).

@@ -199,7 +199,7 @@ on the first line — nothing before it, nothing else on that line. The document
 - **New document**: use `1.0`
 - **Update pass**: read the current `**Version**` and increment the minor digit by 1.
   After `X.9`, roll to `(X+1).0`. Examples: `1.0` → `1.1`, `1.9` → `2.0`, `2.9` → `3.0`.
-- **When to bump**: the version is bumped exactly once per pass as the final action in Step 7, after all changes (content updates and ADR writing) are complete. Do not bump the version mid-flow.
+- **When to bump**: the version is bumped exactly once per pass as the final action in Step 6 (Finalise → Version bump), after all changes (content updates and ADR writing) are complete. Do not bump the version mid-flow.
 - Always update `**Last Updated**` to today's date when bumping.
 
 #### Status rules
@@ -297,7 +297,7 @@ Scan `ARCHITECTURE.md` and all ADRs changed in this pass for `[TBD]` markers.
 This is the single place where the architecture version is bumped. Bump exactly once:
 
 - If `ARCHITECTURE.md` was **created** in this pass, the version is already `1.0`. Do not bump.
-- If `ARCHITECTURE.md` was **updated** in this pass (any change at all), increment the minor version by 1 and update `**Last Updated**` to today's date. Reset `**Status**` to `Draft`.
+- If `ARCHITECTURE.md` was **updated** in this pass (any change at all), increment the minor version by 1 and update `**Last Updated**` to today's date. After `X.9`, roll to `(X+1).0` (e.g. `1.9` → `2.0`). Reset `**Status**` to `Draft`.
 - If `ARCHITECTURE.md` was **not changed**, do not bump.
 
 For an architecture pass, report:

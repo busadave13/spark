@@ -270,7 +270,7 @@ After writing or updating the PRD, scan for `[TBD]` markers.
 This is the single place where the version is bumped. After all PRD changes in this pass are complete (comment resolution, review fixes, TBD resolution, generation updates — whatever combination applied), bump the version exactly once:
 
 - If `PRD.md` was **created** in this pass, the version is already `1.0`. Do not bump.
-- If `PRD.md` was **updated** in this pass (any change at all), increment the minor version by 1 and update `**Last Updated**` to today's date. Reset `**Status**` to `Draft`.
+- If `PRD.md` was **updated** in this pass (any change at all), increment the minor version by 1 and update `**Last Updated**` to today's date. After `X.9`, roll to `(X+1).0` (e.g. `1.9` → `2.0`). Reset `**Status**` to `Draft`.
 - If `PRD.md` was **not changed** (e.g. review found no issues, no comments, no TBDs), do not bump.
 
 Proceed to Step 5.

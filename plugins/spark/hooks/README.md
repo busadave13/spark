@@ -19,3 +19,23 @@ These hooks log Copilot agent session and tool activity to a per-session JSON fi
 ## Output
 
 After a session, look for `spark-{sessionId}-log.json` in the directory the Copilot agent was launched from. Each file is a JSON array of records, one per hook invocation, with timings and the raw event payload.
+
+## Hook schema note
+
+`hooks.json` uses a `"powershell"` key alongside `"type": "command"` to invoke the
+PowerShell scripts. This relies on the Copilot CLI hook runner recognising the
+`"powershell"` key as a Windows-friendly shorthand for spawning `pwsh`. If you are
+running on a host where that shorthand is not honoured, replace each entry with a
+standard `"command"` invocation, for example:
+
+```json
+{
+  "type": "command",
+  "command": "pwsh -NoProfile -File $HOME/.copilot/hooks/scripts/session-start.ps1",
+  "timeoutSec": 30
+}
+```
+
+The scripts themselves are pure PowerShell 7+ and run unchanged under either invocation
+style.
+

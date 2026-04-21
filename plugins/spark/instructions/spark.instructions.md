@@ -1,7 +1,7 @@
 ---
-applyTo: "spark.agent.md"
+applyTo: "**/spark.agent.md"
 ---
-> Version: 1.0.0
+> Version: 1.1
 
 # Spark Agents — Required for `.specs/` Projects
 
@@ -104,7 +104,15 @@ When a reviewer agent (prd-reviewer, architecture-reviewer, adr-reviewer, featur
 - **Inline (mandatory gate):** `tdd-developer` invokes `tdd-reviewer` at Step 10d before marking a feature `Implemented`. `BLOCK` findings are resolved in the same run — either fixed by looping back through the relevant TDD steps, or overridden by appending a justification to the feature spec's `Implementation Overrides` section. No separate handoff to **spark**.
 - **Standalone (ad-hoc audit):** When a user invokes `tdd-reviewer` directly against an already-Implemented feature, findings flow back through **spark** to `tdd-developer` as with the other reviewers.
 
-**Special case — T16/T17 flags from `tdd-reviewer`:** If `tdd-reviewer` flags T16 (missing test plan file) or T17 (coverage map mismatch), delegating back to `tdd-developer` will re-run the full TDD cycle from Step 4 (test plan approval gate), not just update the test plan. This applies to both invocation paths.
+**`tdd-reviewer` BLOCK findings:** `BLOCK` severity findings (`T01`–`T05`, `T14`, `T16`,
+`T17`, `C01`, `C02`, `C04`) prevent the feature from moving to `Implemented`. When
+delegated back to `tdd-developer`, most BLOCK codes resume at the relevant red/green/refactor
+step. Two have stronger semantics: `T16` (missing test plan file) and `T17` (coverage map
+mismatch) re-run the full TDD cycle from Step 4 (test plan approval gate). This applies to
+both invocation paths.
+
+**Special case — T16/T17 flags from `tdd-reviewer`:** because re-routing means re-approving
+the test plan, surface this clearly to the user before kicking off the rerun.
 
 ### TDD-to-ADR Handoff
 After `tdd-developer` completes implementation, it surfaces ADR candidates (decisions made or crystallized during TDD). **spark** presents these candidates to the user with a prompt: "These decisions were surfaced during TDD. Create ADRs for them?" If the user accepts, **spark** invokes `adr-editor` for each candidate in sequence, then offers to add them to `ARCHITECTURE.md`.
@@ -133,3 +141,15 @@ Status field changes (`Draft` → `Approved`, `Approved` → `Draft`, `Approved`
 - `status` — read-only; prints current status, version, and the prerequisite chain.
 
 Manual editing of the metadata block remains a valid fallback, but the skill is the primary path — it is the only way to guarantee the version bump and prerequisite chain are applied consistently.
+
+> **Note on version-bump cadence.** Both editor agents (on every content edit) and
+> `spark-status` (on every state transition) bump the minor version. A typical cycle of
+> `edit → approve` therefore produces two bumps: one when the editor writes the change and
+> resets `Status: Draft`, and one when `spark-status approve` flips `Draft → Approved`.
+> This is intentional — every observable change to the document, in either content or
+> lifecycle state, gets its own version increment.
+
+> **Note on ADR numbering.** Both `adr-editor` and `architecture-editor` compute the next
+> ADR number by scanning `{docs-root}/adr/` for the highest existing `ADR-NNNN-*.md` and
+> incrementing. Both agents must use this exact rule so numbers do not collide. If you
+> change the rule, update both agents in lockstep.
