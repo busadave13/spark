@@ -1,5 +1,5 @@
 ---
-applyTo: "**/.specs/**"
+applyTo: "spark.agent.md"
 ---
 > Version: 1.0.0
 

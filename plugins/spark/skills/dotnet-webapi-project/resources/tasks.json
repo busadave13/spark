@@ -2,12 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "{appHostProjectName}: Build",
+      "label": "{projectName}: Build",
       "type": "process",
       "command": "dotnet",
       "args": [
         "build",
-        "${workspaceFolder}/{appHostProjectName}/{appHostProjectName}.csproj",
+        "${workspaceFolder}/{projectName}/{projectName}/{projectName}.csproj",
         "--configuration",
         "Debug"
       ],
@@ -22,20 +22,20 @@
       }
     },
     {
-      "label": "{appHostProjectName}: Run",
+      "label": "{projectName}: Run",
       "type": "process",
       "command": "dotnet",
       "args": [
         "run",
         "--project",
-        "${workspaceFolder}/{appHostProjectName}/{appHostProjectName}.csproj",
+        "${workspaceFolder}/{projectName}/{projectName}/{projectName}.csproj",
         "--configuration",
         "Debug"
       ],
       "problemMatcher": "$msCompile",
       "isBackground": true,
       "options": {
-        "cwd": "${workspaceFolder}/{appHostProjectName}"
+        "cwd": "${workspaceFolder}/{projectName}/{projectName}"
       },
       "presentation": {
         "reveal": "always",
@@ -50,26 +50,6 @@
       "args": [
         "test",
         "${workspaceFolder}/{projectName}/{projectName}.UnitTests/{projectName}.UnitTests.csproj",
-        "--configuration",
-        "Debug"
-      ],
-      "problemMatcher": "$msCompile",
-      "group": {
-        "kind": "test"
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared",
-        "close": false
-      }
-    },
-    {
-      "label": "{projectName}.IntegrationTests: Run",
-      "type": "process",
-      "command": "dotnet",
-      "args": [
-        "test",
-        "${workspaceFolder}/{projectName}/{projectName}.IntegrationTests/{projectName}.IntegrationTests.csproj",
         "--configuration",
         "Debug"
       ],
