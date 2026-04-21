@@ -98,8 +98,8 @@ project-initialization skill. Do not infer it from Tech Stack content — it mus
 
 Architecture work depends on product context.
 
-1. If `{docs-root}/PRD.md` does not exist, stop and tell the user to create the PRD first using `prd-editor`.
-2. If the user asks for a major architecture change that conflicts with the PRD, stop and tell the user to update the PRD first using `prd-editor`.
+1. If `{docs-root}/PRD.md` does not exist, note that no PRD is available and proceed. PRD is not a prerequisite for architecture — the codebase review (Step 4.3) and the user interview (Step 4.4) become the primary context sources in that case. Omit the PRD entry from `Related Documents` until/unless a PRD is later added.
+2. If `PRD.md` exists and the user asks for a major architecture change that conflicts with it, stop and tell the user to update the PRD first using `prd-editor`.
 3. If `PRD.md` exists but is `Draft`, architecture drafting may proceed, but note that downstream feature work should wait for approval.
 
 ### Step 4.2: Load discovery context

@@ -1,6 +1,6 @@
 ---
 name: dotnet-webapi-project
-description: "Scaffolds a new .NET Web API microservice project with Copilot instructions. Use this skill whenever a user wants to create a new .NET Web API microservice, set up project structure, or generate Copilot/agent guidelines for a .NET project. Requires two inputs: the microservice project name and the root namespace."
+description: None
 ---
 
 ## Required Inputs

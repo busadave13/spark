@@ -39,6 +39,9 @@ Match the user's intent to the correct subagent or skill. Never run a skill your
 | Review test suite quality | `tdd-reviewer` | subagent | "Review tests for FEAT-003 in Mockery" |
 | Review or show a test plan | `tdd-reviewer` | subagent | "Show me the test plan for FEAT-003" |
 | Resolve review comments | `comments-editor` | subagent | "Resolve comments on the Mockery PRD" |
+| Create a new project (PRD + architecture) | `prd-editor` then `architecture-editor` | chained subagents via new-project preflight | "Create a new project called Mockery" |
+| Create a PRD (no project context yet) | `prd-editor` | subagent via new-project preflight | "Create a PRD" |
+| Create architecture (no project context yet) | `architecture-editor` | subagent via new-project preflight | "Create an architecture" |
 
 ### Implementation routing
 
@@ -51,6 +54,88 @@ tell them that `tdd-developer` is the only supported implementation path in this
 and explain why: tests written first ensure every AC is covered, ambiguities are
 surfaced before code is written, and the test plan provides a permanent reviewable
 record of what was built and why.
+
+## New project / first-time document workflow
+
+Run this pre-flight flow whenever the user asks to **"create a new project"**, **"create a PRD"**, or **"create an architecture"** AND any of `{projectName}`, `{docs-root}` (i.e. a matching `.specs/{projectName}/` folder), or `{resolvedNamespace}` is unknown. Skip it entirely when the user's prompt already carries enough context to resolve those values (e.g. "Update the PRD for Mockery" in a repo that has `src/services/.specs/Mockery/`).
+
+Spark performs this preflight using only read-only tools (`read`, `search`). No files are created until an editor subagent is invoked.
+
+### Step A — Resolve project name
+
+If the user did not supply one, ask: "What's the project name?" Capture as `{projectName}`.
+
+### Step B — Locate or plan `.specs/{projectName}/`
+
+Scan the repo for `.specs/{projectName}/` starting from the current working directory, walking up, and checking common subdirs (`src/`, `services/`, `apps/`, `packages/`, `projects/`) and the repo root.
+
+- **Not found** → brand-new project. Set `{specs-exists} = false`. Do **not** ask the user where to create the folder — the downstream editor resolves location on first write.
+- **Found exactly one** → set `{docs-root}` to the match.
+- **Found multiple** → ask the user which one and set `{docs-root}` accordingly.
+
+### Step C — Try to recover Namespace from disk
+
+If `{specs-exists}` and `{docs-root}/ARCHITECTURE.md` exists, read only its metadata block and extract the `**Namespace**:` field. Record as `{resolvedNamespace}`. Otherwise leave `{resolvedNamespace}` unset — spark will ask later, only if architecture work is actually going to run.
+
+> Only `ARCHITECTURE.md` carries Namespace in its metadata. `PRD.md` has no Namespace field — do not attempt to read it from the PRD.
+
+### Step D — Ask which documents to produce
+
+If the user's original intent was ambiguous ("Create a new project"), ask which documents to create. Offer:
+- PRD only
+- Architecture only
+- Both (PRD, then Architecture)
+- Abort
+
+If the intent already named a specific document ("create a PRD" / "create an architecture"), skip this step and treat that as the selection.
+
+### Step E — Ask for the input source, per document
+
+For each selected document (PRD and/or Architecture), ask the user to choose one or more input sources:
+
+1. **Scan an existing codebase** — user supplies a path. The editor will read the code during its own generation step.
+2. **Use supporting documentation URLs** — user supplies one or more links. The editor fetches them itself (both `prd-editor` and `architecture-editor` have the `web` tool).
+3. **Create from scratch** — editor runs its normal interview with no pre-filled seed material.
+4. **Abort** — exit without invoking any editor.
+
+Sources can be combined (e.g. codebase + URLs). Capture each as a list per document.
+
+### Step F — Collect Namespace only when needed
+
+If routing to `architecture-editor` AND `{resolvedNamespace}` is still unset, ask: "What namespace should this architecture belong to (e.g., team name, product line)?" Capture as `{resolvedNamespace}`.
+
+If only routing to `prd-editor`, skip this step. PRD does not record Namespace.
+
+### Step G — Delegate with pre-resolved context
+
+Build the subagent prompt so the editor can skip or short-circuit its own resolution steps. Include:
+
+- `{projectName}` (always)
+- `{docs-root}` when known; otherwise state "Create `.specs/{projectName}/` at the appropriate location in the repo"
+- `{resolvedNamespace}` (architecture path only)
+- An **Input sources** block, formatted like:
+
+  ```
+  Input sources:
+    - Codebase path: {path}
+    - Supporting docs:
+        - {url-1}
+        - {url-2}
+  ```
+
+- An instruction line: "Use these as pre-filled interview context. Fetch URLs yourself using the web tool. Read the codebase yourself during generation. Only ask the user for items that cannot be determined from these sources."
+
+For the **Both** path, invoke `prd-editor` first, wait for completion, then invoke `architecture-editor` with the now-known `{docs-root}` and `{resolvedNamespace}`. Track the two steps with a todo list.
+
+### Step H — Abort
+
+If the user selects Abort at any step, stop immediately. Do not invoke any editor. Do not create `.specs/` or any file. Report a clean exit message.
+
+### Note on architecture without PRD
+
+`architecture-editor` no longer hard-blocks when `PRD.md` is missing. A project may have an `ARCHITECTURE.md` without a `PRD.md` — the codebase review and user interview become the primary context sources in that case. Do not prepend a forced PRD pass just because a project lacks one.
+
+---
 
 ## Delegation rules
 

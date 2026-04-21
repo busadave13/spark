@@ -1,6 +1,6 @@
 ---
 name: dotnet-blazor-project
-description: "Scaffolds a new .NET Blazor project with Copilot instructions. Use this skill whenever a user wants to create a new .NET Blazor app, set up Blazor project structure, or generate Copilot/agent guidelines for a Blazor project. Requires two inputs: the Blazor project name and the root namespace."
+description: None
 ---
 
 ## Required Inputs

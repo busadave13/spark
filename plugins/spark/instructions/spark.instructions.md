@@ -1,6 +1,7 @@
 ---
-applyTo: "**/.specs/**"
+applyTo: "*"
 ---
+> Version: 1.0.0
 
 # Spark Agents — Required for `.specs/` Projects
 
@@ -36,6 +37,19 @@ applyTo: "**/.specs/**"
 ---
 
 ## Key Workflows
+
+### New Project Initialization
+When the user says **"create a new project"**, **"create a PRD"**, or **"create an architecture"** without enough context to identify the project, `.specs/` location, or namespace, **spark** runs a pre-flight interview before delegating:
+
+1. Resolves `{projectName}` (asks if unknown).
+2. Locates `.specs/{projectName}/` — walks the working directory, common subdirs (`src/`, `services/`, `apps/`, `packages/`, `projects/`), and the repo root. Asks the user to disambiguate if multiple matches exist. Records as `{docs-root}`, or notes that the project is brand new.
+3. Recovers `{resolvedNamespace}` by reading the metadata block of `{docs-root}/ARCHITECTURE.md` when present (PRD.md has no Namespace field — only architecture does).
+4. Asks which documents to produce when ambiguous (PRD, Architecture, Both, or Abort).
+5. Asks per document for an **input source**: scan an existing codebase (path), use supporting documentation URLs, create from scratch, or abort. Multiple sources can be combined.
+6. Asks for Namespace only if architecture will run and it's still unset.
+7. Delegates to `prd-editor` and/or `architecture-editor` with a pre-resolved context block that includes `{projectName}`, `{docs-root}`, `{resolvedNamespace}` (arch only), and the list of input sources. The editors fetch URLs and read code themselves.
+
+**PRD is not a prerequisite for architecture.** `architecture-editor` can produce `ARCHITECTURE.md` for a project that has no `PRD.md` — the codebase review and user interview cover the gap.
 
 ### Reviewer-to-Editor Delegation
 When a reviewer agent (prd-reviewer, architecture-reviewer, adr-reviewer, feature-reviewer, tdd-reviewer) flags issues, the findings are returned to **spark**, which routes fixes back to the corresponding editor:
