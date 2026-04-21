@@ -1,7 +1,7 @@
 ---
 name: spark
 description: Orchestrator agent for spec-driven development. Routes tasks to specialized subagents for PRD, architecture, ADR, feature, and TDD implementation workflows. All feature implementation uses tdd-developer — tests written first, code written to those tests.
-model: GPT-5.4 (copilot)
+model: Claude Haiku 4.5 (copilot)
 tools: [read, agent, search, todo]
 user-invocable: true
 disable-model-invocation: false
