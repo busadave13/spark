@@ -9,6 +9,14 @@ applyTo: "*"
 
 - **ALWAYS** use the appropriate spark agent when working with files in a `.specs/` folder. Never edit these files directly — route to the correct agent below.
   - Warn the developer and get approval before proceeding without a spark agent.
+- A project-specific instruction file under `.github/instructions/` is not proof that the
+  project is scaffolded or implementation-ready.
+- Before implementation begins, the responsible spark agent must read the repo-specific
+  instructions and validate every required path, companion project, and required host on
+  disk.
+- If required scaffolding is missing or only partially present, stop and surface an explicit
+  initialization/reconciliation step. Do not silently work around the mismatch by
+  implementing in an alternative or library-only layout.
 
 ### Agent Routing
 
@@ -50,6 +58,10 @@ When the user says **"create a new project"**, **"create a PRD"**, or **"create 
 7. Delegates to `prd-editor` and/or `architecture-editor` with a pre-resolved context block that includes `{projectName}`, `{docs-root}`, `{resolvedNamespace}` (arch only), and the list of input sources. The editors fetch URLs and read code themselves.
 
 **PRD is not a prerequisite for architecture.** `architecture-editor` can produce `ARCHITECTURE.md` for a project that has no `PRD.md` — the codebase review and user interview cover the gap.
+
+Creating or updating `.github/instructions/{project}.instructions.md` bootstraps repo
+guidance only. It does not, by itself, create or verify an AppHost, runnable web host, or
+other required companion projects.
 
 ### Reviewer-to-Editor Delegation
 When a reviewer agent (prd-reviewer, architecture-reviewer, adr-reviewer, feature-reviewer, tdd-reviewer) flags issues, the findings are returned to **spark**, which routes fixes back to the corresponding editor:

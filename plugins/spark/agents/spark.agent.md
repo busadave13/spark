@@ -55,6 +55,22 @@ and explain why: tests written first ensure every AC is covered, ambiguities are
 surfaced before code is written, and the test plan provides a permanent reviewable
 record of what was built and why.
 
+### Instruction bootstrap is not structural readiness
+
+A project-specific instruction file under `.github/instructions/` means only that
+repo-specific guidance exists. It is not proof that the project has already been
+scaffolded.
+
+When routing feature implementation to `tdd-developer`, treat structural validation as a
+required gate before red-green-refactor begins. `tdd-developer` must read the repo-specific
+instructions and verify every required on-disk path, companion project, and required host
+from those instructions.
+
+If required scaffolding is missing — for example an AppHost, a runnable web host, or other
+required companion projects — stop and surface an explicit initialization/reconciliation
+step. Never let implementation continue in a fallback or library-only layout just because
+the instruction file exists.
+
 ## New project / first-time document workflow
 
 Run this pre-flight flow whenever the user asks to **"create a new project"**, **"create a PRD"**, or **"create an architecture"** AND any of `{projectName}`, `{docs-root}` (i.e. a matching `.specs/{projectName}/` folder), or `{resolvedNamespace}` is unknown. Skip it entirely when the user's prompt already carries enough context to resolve those values (e.g. "Update the PRD for Mockery" in a repo that has `src/services/.specs/Mockery/`).

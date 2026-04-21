@@ -75,7 +75,7 @@ Report what was found:
 
 ---
 
-## Step 2b: .NET project initialization (conditional)
+## Step 2b: .NET repo-instruction bootstrap and structural readiness gate (conditional)
 
 After loading context in Step 2, read the `**Project Type**` field from the metadata header of
 `{docs-root}/ARCHITECTURE.md`. This field is required and must be exactly one of:
@@ -91,19 +91,49 @@ After loading context in Step 2, read the `**Project Type**` field from the meta
 **Otherwise** (valid `{projectType}` resolved):
 
 1. Resolve `{repo-root}` from the `git rev-parse --show-toplevel` result in Step 1.
-2. Check whether `{repo-root}/.github/instructions/{projectName-lowercase}.instructions.md`
-   exists.
-   - **File present** — skip initialization, continue to Step 3.
-   - **File absent** — invoke the project-initialization skill that matches `{projectType}`:
-     - `dotnet-webapi` → skill `dotnet-webapi-project`
-     - `dotnet-blazor` → skill `dotnet-blazor-project`
+2. Resolve `{project-instructions}` =
+   `{repo-root}/.github/instructions/{projectName-lowercase}.instructions.md`.
+3. If `{project-instructions}` does not exist, invoke the project-initialization skill that
+   matches `{projectType}`:
+   - `dotnet-webapi` → skill `dotnet-webapi-project`
+   - `dotnet-blazor` → skill `dotnet-blazor-project`
 
-     Steps:
-     - Ask the user for `projectNamespaceName` if not already provided.
-     - Invoke `runSubagent` with the matching skill, passing `projectName` and
-       `projectNamespaceName`.
-     - Wait for the skill to complete before continuing.
-     - Report: `"✅ .NET project initialized ({projectType}): .github/instructions/{projectName-lowercase}.instructions.md created."`
+   Steps:
+   - Ask the user for `projectNamespaceName` if not already provided.
+   - Invoke `runSubagent` with the matching skill, passing `projectName` and
+     `projectNamespaceName`.
+   - Wait for the skill to complete before continuing.
+   - Report: `"✅ Repo instruction file bootstrapped ({projectType}): .github/instructions/{projectName-lowercase}.instructions.md"`
+
+4. Read `{project-instructions}`. **Do not treat the existence of this file as proof that the
+   project is scaffolded or implementation-ready.**
+
+5. Build a structural readiness checklist from `{project-instructions}`:
+   - Every path or project marked `[required]` in `Folder Structure`
+   - Any required host/scaffolding called out in `Critical Rules` or `Guidelines`
+     (for example AppHost, companion shared/test projects, or a runnable host)
+   - For `dotnet-webapi`, when the instructions require minimal APIs or hosting, verify the
+     main application project is a runnable web host, not only a library. Accept
+     repo-equivalent signals such as `Program.cs`, a web SDK, or another established host
+     entrypoint.
+   - For `dotnet-blazor`, verify the main application project is a runnable Blazor app,
+     not only a component library. Accept repo-equivalent signals such as `Program.cs`
+     and the repo's normal startup assets.
+
+6. Validate the checklist against the filesystem before writing the test plan, tests, stubs,
+   or implementation.
+
+7. If any required path, project, or host scaffold is missing or only partially present, stop:
+
+> "⛔ Repo-specific instructions exist, but the project is not structurally ready for TDD.
+> Missing or incomplete required scaffolding from
+> `.github/instructions/{projectName-lowercase}.instructions.md`: {missingItems}.
+> Do not continue implementation in a fallback layout. Reconcile the project structure or
+> scaffold the missing host/projects, then run tdd-developer again."
+
+8. Only continue to Step 3 when both conditions hold:
+   - `{project-instructions}` exists
+   - All required structure from `{project-instructions}` is present on disk
 
 ---
 

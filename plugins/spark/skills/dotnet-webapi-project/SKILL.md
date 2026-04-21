@@ -1,7 +1,16 @@
 ---
 name: dotnet-webapi-project
-description: None
+description: "Bootstrap or reconcile the repo-specific .github/instructions/{project}.instructions.md file for a .NET Web API project. Use when Spark/TDD needs project instructions. This skill does not scaffold AppHost, companion projects, or a runnable Minimal API host."
 ---
+
+## Scope
+
+This skill manages the repo-specific instruction file only. It is not a full project
+scaffolder and must not be reported as proof that the project is implementation-ready.
+
+After this skill runs, another workflow step must still read the instruction file and
+validate that the required on-disk structure exists, including any AppHost, companion
+projects, and runnable Minimal API host the instructions require.
 
 ## Required Inputs
 
@@ -28,4 +37,15 @@ Do not proceed until both values are confirmed.
      - Replace every `{projectName}` with the PascalCase version of projectName
      - Replace every `{projectNamespace}` with the PascalCase version of projectNamespaceName
 
-5. Report the result to the user: confirm the file was created or updated, show the final output file path, and list what substitutions were made. Example: if user provides `projectName = weather-api`, the file `.github/instructions/weather-api.instructions.md` is created with `{projectName}` replaced by `WeatherApi`.
+5. Report the result to the user as instruction-file bootstrap/reconciliation, not full
+    project initialization:
+    - confirm the file was created or updated
+    - show the final output file path
+    - list what substitutions were made
+    - state that required scaffolding must still be present and validated separately before
+       implementation proceeds
+
+    Example: if user provides `projectName = weather-api`, the file
+    `.github/instructions/weather-api.instructions.md` is created with `{projectName}`
+    replaced by `WeatherApi`. Report that the instruction file was bootstrapped, not that the
+    project is fully initialized.
