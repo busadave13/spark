@@ -39,6 +39,7 @@ Match the user's intent to the correct subagent or skill. Never run a skill your
 | Review test suite quality | `tdd-reviewer` | subagent | "Review tests for FEAT-003 in Mockery" |
 | Review or show a test plan | `tdd-reviewer` | subagent | "Show me the test plan for FEAT-003" |
 | Resolve review comments | `comments-editor` | subagent | "Resolve comments on the Mockery PRD" |
+| Transition artifact Status (approve / revert / implement / status) | `spark-status` | skill | "Approve the Mockery PRD", "Mark FEAT-001 implemented" |
 | Create a new project (PRD + architecture) | `prd-editor` then `architecture-editor` | chained subagents via new-project preflight | "Create a new project called Mockery" |
 | Create a PRD (no project context yet) | `prd-editor` | subagent via new-project preflight | "Create a PRD" |
 | Create architecture (no project context yet) | `architecture-editor` | subagent via new-project preflight | "Create an architecture" |

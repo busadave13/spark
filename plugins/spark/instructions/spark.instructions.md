@@ -53,6 +53,7 @@ applyTo: "**/.specs/**"
 | Resolve inline review comments (`.comments.json` sidecars on any spark document, including `.testplan.md`) | **comments-editor** |
 | Implement a feature using TDD (red-green-refactor) | **tdd-developer** |
 | Review test suite quality for feature specs | **tdd-reviewer** |
+| Transition Status on an artifact (Draft ↔ Approved, Approved → Implemented) | **spark-status** (skill) |
 | Orchestrate multi-step spec-driven development workflows | **spark** |
 
 ### When Multiple Agents Could Apply
@@ -122,3 +123,13 @@ Although `prd-reviewer` is the read-only review agent, `prd-editor` also has an 
 
 ### `feature-editor` Review Mode
 Although `feature-reviewer` is the read-only review agent, `feature-editor` also has an internal review path: if the user asks to "review the feature specs" and wants to make edits in the same session, `feature-editor` runs its review checklist (Step 5) directly, skipping the interview and generation steps. Choose `feature-reviewer` for standalone read-only review and `feature-editor` when edits are expected in the same session.
+
+### Status Transitions
+Status field changes (`Draft` → `Approved`, `Approved` → `Draft`, `Approved` → `Implemented`) are the primary path through the **spark-status** skill rather than hand-editing the metadata block. The skill validates the upstream prerequisite chain, bumps the version per the version-bump rule, updates `**Last Updated**` (or the testplan's `**Approved**` / `**Completed**` dates), and prints a one-line summary.
+
+- `approve` — Draft → Approved. Rejects if any upstream artifact is still Draft (e.g. a feature cannot be approved while `ARCHITECTURE.md` is Draft; a testplan cannot be approved while its sibling feature spec is Draft).
+- `revert` — Approved → Draft. Warns about downstream artifacts but does not cascade the revert.
+- `implement` — Approved → Implemented. Features and test plans only. `tdd-developer` remains the normal path that marks a feature `Implemented`; use `/spark-status implement` for manual cleanup or repair.
+- `status` — read-only; prints current status, version, and the prerequisite chain.
+
+Manual editing of the metadata block remains a valid fallback, but the skill is the primary path — it is the only way to guarantee the version bump and prerequisite chain are applied consistently.

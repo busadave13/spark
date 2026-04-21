@@ -13,13 +13,13 @@ stateDiagram-v2
     [*] --> NoSpecs
 
     NoSpecs --> PRDDraft : prd-editor creates PRD.md
-    PRDDraft --> PRDApproved : prd-reviewer approves\n(user marks Approved)
+    PRDDraft --> PRDApproved : prd-reviewer approves\n(/spark-status approve)
 
     PRDApproved --> ArchitectureDraft : architecture-editor\ncreates ARCHITECTURE.md + ADRs
     ArchitectureDraft --> ArchitectureApproved : architecture-reviewer\n+ adr-reviewer approve
 
     ArchitectureApproved --> FeatureSpecDraft : feature-editor\ncreates FEAT-NNN-*.md
-    FeatureSpecDraft --> FeatureSpecApproved : feature-reviewer approves\n(user marks Approved)
+    FeatureSpecDraft --> FeatureSpecApproved : feature-reviewer approves\n(/spark-status approve)
 
     FeatureSpecApproved --> AmbiguitiesResolved : tdd-developer\nresolves [TBD] markers
     AmbiguitiesResolved --> TestPlanDraft : tdd-developer\nproposes test plan
