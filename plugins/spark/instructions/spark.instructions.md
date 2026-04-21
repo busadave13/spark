@@ -1,5 +1,5 @@
 ---
-applyTo: "spark.instructions.md"
+applyTo: "**/.specs/**"
 ---
 > Version: 1.0.0
 
@@ -11,12 +11,32 @@ applyTo: "spark.instructions.md"
   - Warn the developer and get approval before proceeding without a spark agent.
 - A project-specific instruction file under `.github/instructions/` is not proof that the
   project is scaffolded or implementation-ready.
+- User requests such as "create a new project", "start a new service", or "set up a new
+  app" are spec-workflow requests first.
+  - Route them to spark's PRD/architecture pre-flight.
+  - Do not satisfy them by invoking instruction-bootstrap skills or by creating
+    `.github/instructions/{project}.instructions.md` directly.
 - Before implementation begins, the responsible spark agent must read the repo-specific
   instructions and validate every required path, companion project, and required host on
   disk.
-- If required scaffolding is missing or only partially present, stop and surface an explicit
-  initialization/reconciliation step. Do not silently work around the mismatch by
-  implementing in an alternative or library-only layout.
+- If required scaffolding is missing or only partially present, classify it before deciding
+  whether to stop.
+  - If it is only a repo prerequisite and is not part of the approved target state,
+    stop and surface an explicit initialization/reconciliation step.
+  - If approved architecture, ADRs, or feature specs require it as part of the feature's
+    target system or test topology, treat it as implementation scope and create it.
+- When repo instructions or approved docs require a namespace-root AppHost, the agent must
+  also verify that the AppHost is named `{Namespace}.AppHost`, lives directly under the
+  namespace folder root, and registers every runnable main project in that namespace for
+  local Aspire `dotnet run`.
+- Do not silently work around the mismatch by implementing in an alternative or library-only
+  layout.
+- Do not mark a feature implemented while required approved scaffolding such as AppHost,
+  `Test.AppHost`, or required Aspire resources is still missing.
+- `tdd-developer` must invoke `tdd-reviewer` as a mandatory gate before marking a feature
+  `Implemented`. `BLOCK`-severity findings halt the transition unless the user records an
+  override with written justification in the feature spec's `Implementation Overrides`
+  section.
 
 ### Agent Routing
 
@@ -63,6 +83,14 @@ Creating or updating `.github/instructions/{project}.instructions.md` bootstraps
 guidance only. It does not, by itself, create or verify an AppHost, runnable web host, or
 other required companion projects.
 
+When approved docs require that missing structure as part of the implementation target,
+Spark must create it during TDD rather than treating it as an ignorable omission.
+
+The `dotnet-webapi-project` and `dotnet-blazor-project` skills are for instruction-file
+bootstrap or reconciliation only. They are valid only when the user explicitly asks to
+create or update the repo instruction file, or when a later Spark implementation step has
+already identified missing repo instructions as a dependency.
+
 ### Reviewer-to-Editor Delegation
 When a reviewer agent (prd-reviewer, architecture-reviewer, adr-reviewer, feature-reviewer, tdd-reviewer) flags issues, the findings are returned to **spark**, which routes fixes back to the corresponding editor:
 - `prd-reviewer` issues → `prd-editor`
@@ -71,7 +99,11 @@ When a reviewer agent (prd-reviewer, architecture-reviewer, adr-reviewer, featur
 - `feature-reviewer` issues → `feature-editor`
 - `tdd-reviewer` issues → `tdd-developer` (with one exception: see below)
 
-**Special case — T16/T17 flags from `tdd-reviewer`:** If `tdd-reviewer` flags T16 (missing test plan file) or T17 (coverage map mismatch), delegating back to `tdd-developer` will re-run the full TDD cycle from Step 4 (test plan approval gate), not just update the test plan.
+**`tdd-reviewer` has two invocation paths:**
+- **Inline (mandatory gate):** `tdd-developer` invokes `tdd-reviewer` at Step 10d before marking a feature `Implemented`. `BLOCK` findings are resolved in the same run — either fixed by looping back through the relevant TDD steps, or overridden by appending a justification to the feature spec's `Implementation Overrides` section. No separate handoff to **spark**.
+- **Standalone (ad-hoc audit):** When a user invokes `tdd-reviewer` directly against an already-Implemented feature, findings flow back through **spark** to `tdd-developer` as with the other reviewers.
+
+**Special case — T16/T17 flags from `tdd-reviewer`:** If `tdd-reviewer` flags T16 (missing test plan file) or T17 (coverage map mismatch), delegating back to `tdd-developer` will re-run the full TDD cycle from Step 4 (test plan approval gate), not just update the test plan. This applies to both invocation paths.
 
 ### TDD-to-ADR Handoff
 After `tdd-developer` completes implementation, it surfaces ADR candidates (decisions made or crystallized during TDD). **spark** presents these candidates to the user with a prompt: "These decisions were surfaced during TDD. Create ADRs for them?" If the user accepts, **spark** invokes `adr-editor` for each candidate in sequence, then offers to add them to `ARCHITECTURE.md`.

@@ -43,6 +43,11 @@ Match the user's intent to the correct subagent or skill. Never run a skill your
 | Create a PRD (no project context yet) | `prd-editor` | subagent via new-project preflight | "Create a PRD" |
 | Create architecture (no project context yet) | `architecture-editor` | subagent via new-project preflight | "Create an architecture" |
 
+Never route an end-user "create a new project" request to `dotnet-webapi-project` or
+`dotnet-blazor-project`. Those skills only bootstrap or reconcile
+`.github/instructions/{project}.instructions.md` after Spark has already determined that
+repo-specific instructions are the missing dependency.
+
 ### Implementation routing
 
 All feature implementation goes through `tdd-developer`. There is no code-first path.
@@ -66,14 +71,29 @@ required gate before red-green-refactor begins. `tdd-developer` must read the re
 instructions and verify every required on-disk path, companion project, and required host
 from those instructions.
 
-If required scaffolding is missing — for example an AppHost, a runnable web host, or other
-required companion projects — stop and surface an explicit initialization/reconciliation
-step. Never let implementation continue in a fallback or library-only layout just because
-the instruction file exists.
+If required scaffolding is missing, classify it before stopping:
+- If it is only a repo prerequisite and is not part of the approved target state, stop and
+   surface an explicit initialization/reconciliation step.
+- If the approved architecture, ADRs, or feature specs explicitly require that scaffold as
+   part of the system being implemented — for example an AppHost, `Test.AppHost`, shared
+   companion project, or required Aspire resource — `tdd-developer` must treat it as
+   implementation scope and create it rather than silently proceeding without it.
+
+When a namespace-root AppHost is required by repo instructions or approved docs,
+`tdd-developer` must also verify that the AppHost is named `{Namespace}.AppHost`, lives
+directly under the namespace root, and registers every runnable main project in that
+namespace so the local Aspire topology can be started with `dotnet run`.
+
+Never let implementation continue in a fallback or library-only layout just because the
+instruction file exists, and never mark a feature complete while required approved
+scaffolding is still missing.
 
 ## New project / first-time document workflow
 
 Run this pre-flight flow whenever the user asks to **"create a new project"**, **"create a PRD"**, or **"create an architecture"** AND any of `{projectName}`, `{docs-root}` (i.e. a matching `.specs/{projectName}/` folder), or `{resolvedNamespace}` is unknown. Skip it entirely when the user's prompt already carries enough context to resolve those values (e.g. "Update the PRD for Mockery" in a repo that has `src/services/.specs/Mockery/`).
+
+For these requests, do not invoke instruction-bootstrap skills during pre-flight. The
+pre-flight output is Spark documents, not repo scaffolding.
 
 Spark performs this preflight using only read-only tools (`read`, `search`). No files are created until an editor subagent is invoked.
 
@@ -211,6 +231,10 @@ For compound requests like "Set up a new project with PRD and architecture":
 4. Continue until all steps are done.
 5. Summarize results to the user.
 
+Do not insert `dotnet-webapi-project` or `dotnet-blazor-project` into this flow unless the
+user explicitly asks to create or reconcile `.github/instructions/{project}.instructions.md`,
+or a downstream implementation step has stopped on missing repo instructions.
+
 For "implement all approved features":
 
 1. Scan `{docs-root}/feature/` for all `FEAT-*.md` files with `Status: Approved`.
@@ -225,5 +249,11 @@ For "implement all approved features":
 - **Project location**: Projects are organized in `.specs/` folders, which can be located anywhere in the repo
 - **Specification-driven**: All work is guided by PRD, ARCHITECTURE, and feature specifications
 - **TDD is the only implementation path**: All feature implementation goes through `tdd-developer` — tests written first, code written to those tests
+- **Approved topology is implementation scope**: When approved docs require hosts,
+  companion projects, or Aspire topology, implementation must create and verify them;
+  they are not optional follow-up scaffolding
+- **Namespace AppHost is authoritative**: When a namespace folder uses Aspire, the
+   namespace-root `{Namespace}.AppHost` must exist and include every runnable main project
+   in that namespace for local `dotnet run`
 - **Consistent formatting**: All documents follow Spark templates — enforced by the subagents, not by you
 - **No manual catalog management**: Subagents locate `.specs/` folders directly

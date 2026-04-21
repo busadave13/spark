@@ -11,15 +11,17 @@ applyTo: "src/{projectNamespace}/{projectName}/**"
 ## Guidelines
 - Always use minimal APIs for project code.
 - Follow the folder structure conventions outlined below.
+- The namespace folder root must contain exactly one Aspire AppHost project named `{projectNamespace}.AppHost`.
 - Keep the main project code in the `{projectNamespace}/{projectName}` folder.
   - Keep Endpoints in the `{projectNamespace}/{projectName}/Endpoints` folder.
   - Keep Models in the `{projectNamespace}/{projectName}/Models` folder.
   - Keep Services in the `{projectNamespace}/{projectName}/Services` folder.
 - Place shared code in the `{projectNamespace}/{projectName}.Shared` folder.
 - Write unit tests in the `{projectNamespace}/{projectName}.UnitTests` folder.
-- The `{projectNamespace}.AppHost` project is required for hosting the application.
-- Use Aspire AppHost for hosting the applications in this root `{projectNamespace}` folder. 
-  - All applications in this folder should be hosted using Aspire AppHost.
+- The `{projectNamespace}.AppHost` project is required and must live directly under the `{projectNamespace}` folder root.
+- Use Aspire AppHost for hosting the applications in this root `{projectNamespace}` folder.
+  - Every runnable main project in this namespace folder must be configured in `{projectNamespace}.AppHost` so the full local topology can be started with Aspire `dotnet run`.
+  - Shared libraries, unit test projects, and other non-runnable companion projects must not be treated as standalone AppHost app resources unless the repo has an explicit reason to run them as processes.
 
 ## Folder Structure
 ```
@@ -32,5 +34,5 @@ applyTo: "src/{projectNamespace}/{projectName}/**"
 |   |-- {projectName}.Shared/ [optional] (shared project code)
 |   |-- {projectName}.UnitTests/ [required] (project unit tests)
 |   |-- {projectName}.IntegrationTests/ [optional] (project integration tests)
-|-- {projectNamespace}.AppHost/ [required] (Aspire AppHost project)
+|-- {projectNamespace}.AppHost/ [required] (Aspire AppHost project at the namespace root; configures every runnable main project under this namespace for local Aspire `dotnet run`)
 ```

@@ -1,12 +1,15 @@
 ---
 name: dotnet-webapi-project
-description: "Bootstrap or reconcile the repo-specific .github/instructions/{project}.instructions.md file for a .NET Web API project. Use when Spark/TDD needs project instructions. This skill does not scaffold AppHost, companion projects, or a runnable Minimal API host."
+description: "Bootstrap or reconcile the repo-specific .github/instructions/{project}.instructions.md file for an existing Spark-managed .NET Web API codebase. Use only when the user explicitly asks to create or update that instruction file, or when Spark/TDD has already identified missing repo instructions as a dependency. Do not use for end-user requests like 'create a new project', PRD creation, architecture creation, or app scaffolding."
 ---
 
 ## Scope
 
 This skill manages the repo-specific instruction file only. It is not a full project
 scaffolder and must not be reported as proof that the project is implementation-ready.
+
+This skill is not the entry point for a new project request. In Spark workflows, a new
+project starts with PRD and/or architecture generation, not instruction bootstrap.
 
 After this skill runs, another workflow step must still read the instruction file and
 validate that the required on-disk structure exists, including any AppHost, companion

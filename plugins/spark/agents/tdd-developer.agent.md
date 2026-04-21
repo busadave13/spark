@@ -11,13 +11,15 @@ disable-model-invocation: false
 
 Implements a feature spec using strict red-green-refactor TDD. Performs an ambiguity check
 before writing any tests, produces a reviewable test plan, then executes the full TDD cycle
-with real test execution. Marks `Status: Implemented` only when all ACs have passing tests
-and the suite is green.
+with real test execution. Marks `Status: Implemented` only when all ACs have passing tests,
+the suite is green, and required approved scaffolding exists.
 
 **What this agent does:**
 - Resolves spec ambiguities and writes concrete values back to the feature spec
 - Produces a named test plan, gets human approval, and writes it to `FEAT-NNN.testplan.md`
 - Writes stubs so the suite is runnable before implementation begins
+- Creates missing architecture-owned scaffolding that approved docs require for the feature,
+  such as AppHost, composed test hosts, companion projects, or required Aspire resources
 - Executes red → green → refactor with real test runs after every change
 - Verifies every AC is covered before marking the feature Implemented
 - Surfaces ADR candidates from ordering constraints caught during refactor
@@ -26,7 +28,11 @@ and the suite is green.
 - Modify `PRD.md`, `ARCHITECTURE.md`, or ADR files — read-only reference
 - Implement behaviour not covered by a failing test
 - Add tests during refactor (that is a Phase 2 violation)
+- Invent unrelated scaffold or infrastructure that is not required by approved docs or
+  repo-specific instructions
 - Mark `Implemented` if any AC has no passing test
+- Mark `Implemented` if `tdd-reviewer` reports `BLOCK` findings without a recorded user
+  override
 
 ## Execution guidelines
 
@@ -73,9 +79,12 @@ Read in a single parallel call:
 Report what was found:
 > "Found FEAT-{NNN}, ARCHITECTURE.md, {N} relevant ADRs, test runner: {runner}."
 
+If structural work was carried into scope in Step 2b, append:
+> "Approved structural work in scope: {items}."
+
 ---
 
-## Step 2b: .NET repo-instruction bootstrap and structural readiness gate (conditional)
+## Step 2b: .NET repo-instruction bootstrap and structural ownership gate (conditional)
 
 After loading context in Step 2, read the `**Project Type**` field from the metadata header of
 `{docs-root}/ARCHITECTURE.md`. This field is required and must be exactly one of:
@@ -108,10 +117,25 @@ After loading context in Step 2, read the `**Project Type**` field from the meta
 4. Read `{project-instructions}`. **Do not treat the existence of this file as proof that the
    project is scaffolded or implementation-ready.**
 
-5. Build a structural readiness checklist from `{project-instructions}`:
+5. Build two structural checklists:
+   - **Repo-required scaffolding** from `{project-instructions}`
+   - **Approved target-state scaffolding** explicitly required by `{docs-root}/ARCHITECTURE.md`,
+     the relevant ADRs, and the target feature spec
+
+   The approved target-state checklist must include required hosts, companion projects,
+   and composed-topology resources mentioned as part of the implemented system or test
+   topology. This includes items such as AppHost, `Test.AppHost`, shared libraries,
+   integration-test hosts, and Aspire resources like Azurite / `mockstorage` when the
+   approved docs call them out.
+
+6. Build the repo-required checklist from `{project-instructions}`:
    - Every path or project marked `[required]` in `Folder Structure`
    - Any required host/scaffolding called out in `Critical Rules` or `Guidelines`
      (for example AppHost, companion shared/test projects, or a runnable host)
+   - When the instructions require a namespace-root AppHost, verify that the AppHost exists
+     directly under the namespace folder, follows the required `{Namespace}.AppHost` naming,
+     and configures every runnable main project under that namespace for local Aspire
+     `dotnet run`
    - For `dotnet-webapi`, when the instructions require minimal APIs or hosting, verify the
      main application project is a runnable web host, not only a library. Accept
      repo-equivalent signals such as `Program.cs`, a web SDK, or another established host
@@ -120,10 +144,16 @@ After loading context in Step 2, read the `**Project Type**` field from the meta
      not only a component library. Accept repo-equivalent signals such as `Program.cs`
      and the repo's normal startup assets.
 
-6. Validate the checklist against the filesystem before writing the test plan, tests, stubs,
+7. Validate both checklists against the filesystem before writing the test plan, tests, stubs,
    or implementation.
 
-7. If any required path, project, or host scaffold is missing or only partially present, stop:
+8. Classify every missing item:
+   - **Missing prerequisite** — required by repo instructions, but not explicitly part of the
+     approved target state for the feature being implemented
+   - **Missing deliverable scaffold** — explicitly required by approved architecture, ADRs,
+     or the target feature's acceptance criteria, topology, storage, or test-harness design
+
+9. If any **missing prerequisite** remains, stop:
 
 > "⛔ Repo-specific instructions exist, but the project is not structurally ready for TDD.
 > Missing or incomplete required scaffolding from
@@ -131,9 +161,19 @@ After loading context in Step 2, read the `**Project Type**` field from the meta
 > Do not continue implementation in a fallback layout. Reconcile the project structure or
 > scaffold the missing host/projects, then run tdd-developer again."
 
-8. Only continue to Step 3 when both conditions hold:
+10. If any **missing deliverable scaffold** is found, do **not** treat that as a reason to skip
+    it or silently proceed in an alternative layout. Carry those items into the implementation
+    scope and test plan as required work.
+
+    Report them explicitly before continuing, for example:
+
+> "⚠ Approved docs require missing structural work that must be implemented as part of this
+> feature: {missingDeliverableItems}. I will include these in the test plan and implementation
+> instead of treating them as optional scaffolding."
+
+11. Only continue to Step 3 when both conditions hold:
    - `{project-instructions}` exists
-   - All required structure from `{project-instructions}` is present on disk
+   - No unresolved **missing prerequisite** items remain
 
 ---
 
@@ -211,6 +251,12 @@ For every AC in the feature spec, map it to test cases:
 - At least one **failure mode** test — what happens when the precondition is not met
 - **Edge case** tests for any boundary values (e.g. a token at exactly the expiry
   threshold, a counter at exactly the rate limit, a count at exactly the rate limit)
+
+If Step 2b identified approved structural work that is currently missing, include explicit
+tests or verification steps for that work in the plan. Missing required topology is not an
+implementation detail to hand-wave away. The plan must cover the observable behaviour that
+depends on that structure existing, such as composed startup, Aspire service discovery,
+storage emulator wiring, or AppHost-backed integration topology.
 
 Name every test as a snake_case statement of behaviour that reads as a sentence:
 `token_at_exactly_12_hours_is_expired` — not `testTokenExpiry` or `test_2`
@@ -477,6 +523,76 @@ If any check fails: fix the implementation file coverage map header before proce
 Do not advance to Step 11 until both test traceability (10a) and code traceability (10b)
 pass.
 
+### 10c — Structural completeness check
+
+1. Re-read `{docs-root}/ARCHITECTURE.md`, the relevant ADRs, the target feature spec, and
+  `{project-instructions}`
+2. Rebuild the approved target-state scaffolding checklist from Step 2b
+3. Confirm every required host, companion project, and composed-topology resource that the
+  approved docs require for this feature now exists on disk and is wired consistently enough
+  for the implemented tests and runtime flow to use it
+4. When a namespace-root AppHost is required, confirm it registers every runnable main
+  project in that namespace so the intended local topology can be started through Aspire
+  `dotnet run`
+5. Confirm no required item was silently replaced with a fallback layout that contradicts the
+  approved docs (for example, skipping AppHost and wiring storage directly in app settings
+  when the approved docs require Aspire service discovery)
+
+If any required scaffold is still missing or contradicted, do not mark the feature
+`Implemented`. Surface the missing items in the summary under `Structural gaps` and leave
+the feature status as `Draft`.
+
+### 10d — Mandatory `tdd-reviewer` gate
+
+Only reached when 10a, 10b, and 10c have all passed. This is the mandatory test-quality
+gate before `Implemented` can be set.
+
+1. Invoke `tdd-reviewer` via `runSubagent`, passing `{docs-root}` and the target feature
+   spec filename (`FEAT-{NNN}-{name}.md`).
+2. Parse the fenced JSON summary block emitted by `tdd-reviewer` Step 6. Extract
+   `gate`, `counts`, and `findings`.
+3. Hold onto `WARN` and `INFO` findings — they do not block the transition but must be
+   surfaced in the Step 11 summary under `Test quality warnings`.
+4. **If `gate == "PASS"`** — proceed to Step 11.
+5. **If `gate == "FAIL"`** (at least one BLOCK finding):
+
+   a. Render the reviewer's findings table verbatim under a heading
+      `## tdd-reviewer findings`. Do not summarise or abbreviate.
+
+   b. Ask the user exactly:
+
+      > "tdd-reviewer blocked marking FEAT-{NNN} as Implemented ({N} BLOCK findings).
+      > Choose one:
+      > (a) I will fix the issues — re-run the affected TDD steps and invoke the reviewer
+      >     again.
+      > (b) Override and mark Implemented anyway — requires a written justification that
+      >     will be recorded in the feature spec under `Implementation Overrides`.
+      > Respond `(a) fix` or `(b) override: <your justification>`."
+
+   c. On **(a) fix**: loop back through the relevant TDD steps (typically Step 7 for
+      coverage-map issues, Step 8 for test failures, Step 9 for refactor-introduced
+      regressions). When fixes are complete, re-run 10a/10b/10c and then re-invoke
+      `tdd-reviewer`. There is no limit on iteration count; each loop must produce a
+      fresh JSON summary.
+
+   d. On **(b) override**: require a non-empty justification string. Append the following
+      to the feature spec (append a new bullet to the existing section if one is already
+      present; otherwise create the section at the bottom of the file, after any
+      existing content):
+
+      ```markdown
+      ## Implementation Overrides
+      - {today's date YYYY-MM-DD} — Overrode tdd-reviewer BLOCK findings: {comma-separated
+        check IDs}. Justification: {user-supplied text verbatim}.
+      ```
+
+      Then proceed to Step 11.
+
+6. Whichever path was taken, record the outcome for the Step 11 summary:
+   - Final `gate` result (PASS or OVERRIDE)
+   - The full WARN/INFO finding list
+   - Any override bullet that was added
+
 ---
 
 ## Step 11: Update the feature spec and report
@@ -489,8 +605,16 @@ Update `{docs-root}/feature/FEAT-{NNN}-{name}.md`:
 - Bump the minor version by 1
 - Set `**Last Updated**` to today
 
-Only set `Implemented` if Step 10 confirmed every AC is covered. If coverage gaps exist,
-set `**Status**` to `Draft` and note the gaps for the user to resolve.
+Only set `Implemented` if Step 10 confirmed every AC is covered, the required approved
+scaffolding exists, and the `tdd-reviewer` gate from Step 10d returned `PASS` (or was
+explicitly overridden with a recorded justification in the feature spec's
+`Implementation Overrides` section). If coverage gaps, structural gaps, or unresolved
+BLOCK findings exist, set `**Status**` to `Draft` and note the gaps for the user to
+resolve.
+
+Step 10c and Step 10d are both part of the implementation gate. A structurally incomplete
+result cannot be reported as implemented even if unit tests pass, and a test-quality
+failure cannot be silently bypassed — either fix the findings or record an override.
 
 ### Summary report
 
@@ -510,6 +634,18 @@ Implementation:     [paths]
 
 ### Coverage gaps
 [Any ACs with no passing test, and why — blocks Implemented status]
+
+### Structural gaps
+[Any required AppHost, companion project, test host, or other approved scaffold still
+missing or incorrectly wired]
+
+### Test quality warnings
+[Each WARN/INFO finding from the Step 10d tdd-reviewer run — ID, check description,
+one-line note. Omit the section only if there are zero WARN/INFO findings.]
+
+### Implementation overrides
+[Each override applied in this run — BLOCK IDs that were overridden and a one-line
+summary of the justification. Omit the section only if no override was used.]
 
 ### Refactor changes
 [Each smell fixed, one line per change]
