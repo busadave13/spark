@@ -1,0 +1,7 @@
+tdd:
+    enabled: true
+    agents:
+        - name: tdd-developer
+          type: dotnet-webapi
+aspire:
+    enabled: true 
