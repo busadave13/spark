@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 # ADR-0001: Use a Single Minimal API Service
 
 > **Version**: 1.0<br>

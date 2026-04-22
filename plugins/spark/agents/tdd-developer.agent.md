@@ -1,8 +1,8 @@
 ---
 name: tdd-developer
-description: "Read/write agent that implements an Approved feature spec using strict red-green-refactor TDD. Reads FEAT-NNN-*.md, ARCHITECTURE.md, ADRs, and existing test infrastructure as context. Writes a FEAT-NNN.testplan.md, test files, and implementation stubs; updates the feature spec Status to Implemented when all ACs have passing tests. Phases: ambiguity check → test plan (human gate) → stubs → red → green → refactor → traceability check. Triggers: 'implement with TDD', 'TDD this feature', 'write tests first', 'red green refactor', 'tdd FEAT-NNN'. Requires an Approved FEAT-NNN-*.md under {docs-root}/feature/. Use feature-editor to create a spec first if one does not exist."
+description: "Read/write agent that implements an Approved feature spec using strict red-green-refactor TDD. Reads FEAT-NNN-*.md, ARCHITECTURE.md, ADRs, and existing test infrastructure as context. Writes a FEAT-NNN.testplan.md, test files, and implementation stubs; updates the feature spec Status to Implemented when all ACs have passing tests. Phases: ambiguity check → test plan → stubs → red → green → refactor → traceability check. Runs autonomously end-to-end; halts only on genuine blockers (ambiguous AC, missing approved scaffolding, unresolvable BLOCK findings). Triggers: 'implement with TDD', 'TDD this feature', 'write tests first', 'red green refactor', 'tdd FEAT-NNN'. Requires an Approved FEAT-NNN-*.md under {docs-root}/feature/. Use feature-editor to create a spec first if one does not exist."
 model: Claude Opus 4.6 (copilot)
-tools: [execute, read, edit, search, todo, agent]
+tools: [execute, read, edit, search, skill, todo, agent]
 user-invocable: false
 disable-model-invocation: false
 ---
@@ -16,10 +16,10 @@ the suite is green, and required approved scaffolding exists.
 
 **What this agent does:**
 - Resolves spec ambiguities and writes concrete values back to the feature spec
-- Produces a named test plan, gets human approval, and writes it to `FEAT-NNN.testplan.md`
+- Produces a named test plan and writes it to `{docs-root}/testplan/FEAT-NNN.testplan.md`
 - Writes stubs so the suite is runnable before implementation begins
 - Creates missing architecture-owned scaffolding that approved docs require for the feature,
-  such as AppHost, composed test hosts, companion projects, or required Aspire resources
+  such as composed test hosts, companion projects, or required runtime resources
 - Executes red → green → refactor with real test runs after every change
 - Verifies every AC is covered before marking the feature Implemented
 - Surfaces ADR candidates from ordering constraints caught during refactor
@@ -31,8 +31,9 @@ the suite is green, and required approved scaffolding exists.
 - Invent unrelated scaffold or infrastructure that is not required by approved docs or
   repo-specific instructions
 - Mark `Implemented` if any AC has no passing test
-- Mark `Implemented` if `tdd-reviewer` reports `BLOCK` findings without a recorded user
-  override
+- Mark `Implemented` if `tdd-reviewer` reports unresolved `BLOCK` findings (the agent
+  auto-loops to fix them; if the same BLOCK set recurs after a fix attempt it halts and
+  surfaces the findings to the user instead of overriding silently)
 
 ## Execution guidelines
 
@@ -43,7 +44,7 @@ the suite is green, and required approved scaffolding exists.
 
 ---
 
-## Step 1: Resolve paths and approval gate
+## Step 1: Resolve paths and preconditions
 
 `.specs/` folders can be located anywhere in the repo.
 
@@ -87,15 +88,14 @@ If structural work was carried into scope in Step 2b, append:
 ## Step 2b: .NET repo-instruction bootstrap and structural ownership gate (conditional)
 
 After loading context in Step 2, read the `**Project Type**` field from the metadata header of
-`{docs-root}/ARCHITECTURE.md`. This field is required and must be exactly one of:
+`{docs-root}/ARCHITECTURE.md`. This field is required and must be exactly:
 
 - `dotnet-webapi`
-- `dotnet-blazor`
 
-**If the field is missing or not one of the allowed values**, stop:
+**If the field is missing or not the allowed value**, stop:
 
 > "⛔ ARCHITECTURE.md is missing a valid `Project Type`. Run architecture-editor to set
-> `**Project Type**` to `dotnet-webapi` or `dotnet-blazor`, then run tdd-developer again."
+> `**Project Type**` to `dotnet-webapi`, then run tdd-developer again."
 
 **Otherwise** (valid `{projectType}` resolved):
 
@@ -105,7 +105,6 @@ After loading context in Step 2, read the `**Project Type**` field from the meta
 3. If `{project-instructions}` does not exist, invoke the project-initialization skill that
    matches `{projectType}`:
    - `dotnet-webapi` → skill `dotnet-webapi-project`
-   - `dotnet-blazor` → skill `dotnet-blazor-project`
 
    Steps:
    - Ask the user for `projectNamespaceName` if not already provided.
@@ -124,25 +123,17 @@ After loading context in Step 2, read the `**Project Type**` field from the meta
 
    The approved target-state checklist must include required hosts, companion projects,
    and composed-topology resources mentioned as part of the implemented system or test
-   topology. This includes items such as AppHost, `Test.AppHost`, shared libraries,
-   integration-test hosts, and Aspire resources like Azurite / `mockstorage` when the
-   approved docs call them out.
+   topology. This includes items such as shared libraries, integration-test hosts, and
+   any storage/emulator resources the approved docs call out.
 
 6. Build the repo-required checklist from `{project-instructions}`:
    - Every path or project marked `[required]` in `Folder Structure`
    - Any required host/scaffolding called out in `Critical Rules` or `Guidelines`
-     (for example AppHost, companion shared/test projects, or a runnable host)
-   - When the instructions require a namespace-root AppHost, verify that the AppHost exists
-     directly under the namespace folder, follows the required `{Namespace}.AppHost` naming,
-     and configures every runnable main project under that namespace for local Aspire
-     `dotnet run`
+     (for example companion shared/test projects, or a runnable host)
    - For `dotnet-webapi`, when the instructions require minimal APIs or hosting, verify the
      main application project is a runnable web host, not only a library. Accept
      repo-equivalent signals such as `Program.cs`, a web SDK, or another established host
      entrypoint.
-   - For `dotnet-blazor`, verify the main application project is a runnable Blazor app,
-     not only a component library. Accept repo-equivalent signals such as `Program.cs`
-     and the repo's normal startup assets.
 
 7. Validate both checklists against the filesystem before writing the test plan, tests, stubs,
    or implementation.
@@ -240,9 +231,10 @@ The spec is the source of truth — resolved values must live there, not only in
 
 ## Step 4: Generate and present the test plan
 
-Before writing a single file, produce the full test plan and present it to the user for
-approval. This is a required human gate — do not proceed to Step 5 until the plan is
-approved.
+Before writing a single file, produce the full test plan and present it in the
+conversation so the user can see what is about to be written. This is **not** a manual
+approval gate — proceed straight through to writing the plan file and Step 5. The user
+can interject at any time; if they do not, the agent advances autonomously.
 
 ### How to build the plan
 
@@ -256,8 +248,8 @@ For every AC in the feature spec, map it to test cases:
 If Step 2b identified approved structural work that is currently missing, include explicit
 tests or verification steps for that work in the plan. Missing required topology is not an
 implementation detail to hand-wave away. The plan must cover the observable behaviour that
-depends on that structure existing, such as composed startup, Aspire service discovery,
-storage emulator wiring, or AppHost-backed integration topology.
+depends on that structure existing, such as composed startup, service discovery,
+storage emulator wiring, or composed integration topology.
 
 Name every test as a snake_case statement of behaviour that reads as a sentence:
 `token_at_exactly_12_hours_is_expired` — not `testTokenExpiry` or `test_2`
@@ -299,40 +291,62 @@ Test runner: [runner]   Test file: [path]
 Use `happy`, `failure`, or `edge` as the category label for each test — one test per line,
 indented under its AC block.
 
-### Approval gate
-
-After presenting the plan, ask:
-
-> "Does this test plan look right? You can ask me to add, remove, or rename any test
-> before I write any code. Approve to begin the red phase."
-
-Wait for the user's response. Accept:
-
-- **"Approve"** / **"yes"** / **"looks good"** → proceed to Step 5
-- **Specific changes** (e.g. "add a test for concurrent requests on AC-03", "rename
-  token_rejected_after_12_hours to expired_token_returns_401") → apply the change to
-  the plan, re-present only the affected AC block, and ask for confirmation again
-- **"Cancel"** → stop and report that no files have been written
-
-Do not proceed until you have explicit approval.
-
 ### Write the test plan file
 
-Immediately after the user approves, write the test plan to disk as the first file
-created in the entire TDD cycle — before stubs, before the test file, before anything:
+Immediately after presenting the plan, write it to disk as the first file created in the
+entire TDD cycle — before stubs, before the test file, before anything else:
 
-**Path:** `{docs-root}/feature/FEAT-{NNN}-{kebab-name}.testplan.md`
+**Path:** `{docs-root}/testplan/FEAT-{NNN}-{kebab-name}.testplan.md`
+
+(The `{docs-root}/testplan/` folder is a sibling of `{docs-root}/feature/` — not inside
+it. If the folder does not exist yet, create it.)
 
 **Format:** Use `references/testplan-template.md` as the source of truth for the file
-structure. Fill every `{placeholder}` with the values from the approved plan. Set
-`**Status**` to `Draft`.
+structure. Fill every `{placeholder}` with the values from the plan. Set `**Status**` to
+`Draft`. Fill the `**Plan baseline**` field with the agreed counts in the form
+`{N} ACs · {N} cases` — this becomes the immutable contract that Step 10a.3 and the
+`tdd-reviewer` T20 check measure live results against.
 
-This file is the permanent record of what was agreed. It is not generated — it is
-written once from the approved plan and never auto-modified. If the plan changes, the
-user must re-approve and the file must be rewritten.
+**Overwrite semantics.** The write must replace the file in full. Never append. The
+first byte of the resulting file must be `<!-- SPARK -->` and the file must contain
+exactly one `<!-- SPARK -->` marker. Any leftover content from a prior testplan
+(including legacy `<!-- SPECIT -->` blocks) must be discarded by the write. The
+`tdd-reviewer` T21 check enforces this and is BLOCK.
+
+This file is the permanent record of the plan. If a later step (7, 8, or 9) discovers
+that the plan needs to change, do **not** silently rewrite it. Either:
+
+- The change is purely cosmetic (test renames with no count change, AC reordering with
+  no add/remove) — update the file in place, refresh the coverage map header in the
+  test file (Step 5), and continue. The `**Plan baseline**` does not change.
+- The change adds or removes ACs/cases — invoke `spark-status revert` on the testplan
+  to return it to `Draft`, edit the file (including the `**Plan baseline**` field),
+  invoke `spark-status approve` again, and continue. This produces a visible audit
+  trail of plan drift.
 
 Report the file written:
-> "✅ Test plan written to `{docs-root}/feature/FEAT-{NNN}-{name}.testplan.md`"
+> "✅ Test plan written to `{docs-root}/testplan/FEAT-{NNN}-{name}.testplan.md`"
+
+---
+
+## Step 4b: Approve the test plan
+
+Before writing any tests or code, transition the freshly written testplan from `Draft`
+to `Approved` by invoking the `spark-status` **host skill** (via the `skill` tool —
+**not** `runSubagent`; there is no `spark-status` subagent):
+
+> Invoke the `skill` tool with `name: spark-status` and arguments
+> `approve {docs-root}/testplan/FEAT-{NNN}-{name}.testplan.md`
+
+The skill enforces the prerequisite chain (sibling feature spec must be `Approved` or
+`Implemented`), stamps the `**Approved**` date, and returns a confirmation. If the
+skill rejects the transition, halt and surface the rejection to the user — do **not**
+proceed to Step 5 with a `Draft` testplan. A `Draft` testplan at this point is a
+genuine blocker, not a workflow detail to be hand-waved past.
+
+This step is what makes Step 10a's `Approved → Implemented` transition for the
+testplan legal at the end of the cycle. Without it, `spark-status implement` will
+correctly refuse to move the feature forward later (the testplan would still be Draft).
 
 ---
 
@@ -344,7 +358,7 @@ from the `.testplan.md` file rather than from memory to guarantee they match exa
 
 ```
 // FEAT-NNN: [feature name]
-// Test plan: {docs-root}/feature/FEAT-NNN-name.testplan.md
+// Test plan: {docs-root}/testplan/FEAT-NNN-name.testplan.md
 // AC coverage map:
 //   AC-01 → test_name_one, test_name_two, test_name_three
 //   AC-02 → test_name_four, test_name_five
@@ -353,7 +367,7 @@ from the `.testplan.md` file rather than from memory to guarantee they match exa
 
 The coverage map must exactly match the test plan file. Do not add or remove tests
 here — any divergence from the `.testplan.md` is an error. Changes require returning
-to Step 4, re-approving, and rewriting the test plan file first.
+to Step 4 and rewriting the test plan file first.
 
 ---
 
@@ -362,7 +376,7 @@ to Step 4, re-approving, and rewriting the test plan file first.
 Once the test plan file is written, the implementation files will track the same AC coverage.
 Before writing any implementation code, you will add a coverage map header to each
 implementation file (after all imports, before any logic). This header is written after
-stubs and tests are approved, so you know which ACs are covered.
+stubs and tests are written, so you know which ACs are covered.
 
 **The coverage map header is written from the test plan, not from memory.** Re-read the
 `.testplan.md` file now to extract the AC IDs. Map each AC to the function(s) or method(s)
@@ -450,8 +464,8 @@ will be complete and accurate by the end of this step.
 
 **Never write code that no failing test exercises.** If you find yourself implementing
 logic that no current failing test demands, stop. Either the test is missing from the
-plan (return to Step 4, add it to the plan, get approval, then return to Step 6), or
-you are building ahead of the tests (don't).
+plan (return to Step 4, add it to the plan, rewrite the test plan file, then return to
+Step 6), or you are building ahead of the tests (don't).
 
 Continue until all planned tests pass. Confirm the count matches the test plan exactly
 before moving to Step 8.
@@ -500,14 +514,24 @@ Before producing the summary, verify test and code traceability.
 
 ### 10a — Test traceability check
 
-1. Read `{docs-root}/feature/FEAT-{NNN}-{name}.testplan.md`
+1. Read `{docs-root}/testplan/FEAT-{NNN}-{name}.testplan.md`
 2. Confirm every AC ID in the test plan has at least one passing test
-3. Confirm the passing test count matches the test plan total exactly —
-   more tests than planned means behaviour was added without going through Step 4;
-   fewer means tests were deleted without re-approving the plan
+3. Confirm the passing test count matches the testplan's `**Plan baseline**` field
+   exactly (e.g. baseline `8 ACs · 20 cases` requires exactly 20 passing tests). The
+   `**Plan baseline**` was frozen at Step 4 and is the immutable contract — any
+   divergence means behaviour was added/removed without going through Step 4's
+   revert/approve cycle, and is a Step 4 violation, not a "rewrite the plan to match"
+   moment.
 4. Confirm every test in the test file has an AC tag — untagged tests are flagged as
    potential scope creep (not deleted — surfaced for human review)
-5. Update the test plan file: set `**Status**` to `Implemented`
+5. Transition the testplan from `Approved` to `Implemented` by invoking the
+   `spark-status` skill:
+   > `spark-status implement {docs-root}/testplan/FEAT-{NNN}-{name}.testplan.md`
+
+   Do not edit the `**Status**` field of the testplan by hand. The skill enforces
+   prerequisites (sibling feature spec must be `Approved` or `Implemented`) and stamps
+   `**Completed**`. If the skill rejects the transition, treat it as a coverage gap
+   and halt — do not proceed.
 
 If any AC has no passing test: do not mark the feature `Implemented`. Surface it in the
 summary under "Coverage gaps" and explain what blocked it.
@@ -532,12 +556,8 @@ pass.
 3. Confirm every required host, companion project, and composed-topology resource that the
   approved docs require for this feature now exists on disk and is wired consistently enough
   for the implemented tests and runtime flow to use it
-4. When a namespace-root AppHost is required, confirm it registers every runnable main
-  project in that namespace so the intended local topology can be started through Aspire
-  `dotnet run`
-5. Confirm no required item was silently replaced with a fallback layout that contradicts the
-  approved docs (for example, skipping AppHost and wiring storage directly in app settings
-  when the approved docs require Aspire service discovery)
+4. Confirm no required item was silently replaced with a fallback layout that contradicts the
+  approved docs
 
 If any required scaffold is still missing or contradicted, do not mark the feature
 `Implemented`. Surface the missing items in the summary under `Structural gaps` and leave
@@ -546,7 +566,8 @@ the feature status as `Draft`.
 ### 10d — Mandatory `tdd-reviewer` gate
 
 Only reached when 10a, 10b, and 10c have all passed. This is the mandatory test-quality
-gate before `Implemented` can be set.
+gate before `Implemented` can be set. The agent runs this gate autonomously — there is
+no fix-vs-override prompt to the user.
 
 1. Invoke `tdd-reviewer` via `runSubagent`, passing `{docs-root}` and the target feature
    spec filename (`FEAT-{NNN}-{name}.md`).
@@ -557,42 +578,51 @@ gate before `Implemented` can be set.
 4. **If `gate == "PASS"`** — proceed to Step 11.
 5. **If `gate == "FAIL"`** (at least one BLOCK finding):
 
-   a. Render the reviewer's findings table verbatim under a heading
-      `## tdd-reviewer findings`. Do not summarise or abbreviate.
+   a. Record the current set of BLOCK finding IDs as `previousBlockSet`.
 
-   b. Ask the user exactly:
+   b. Loop back through the relevant TDD steps to fix the findings:
+      - `T01`–`T05`, `T14`, `C01`, `C02`, `C04` → re-enter at the relevant
+        red/green/refactor step (typically Step 7 for coverage-map issues, Step 8 for
+        test failures, Step 9 for refactor-introduced regressions).
+      - `T16` (missing test plan file) and `T17` (coverage map mismatch) → return to
+        Step 4 and rewrite the test plan file, then continue forward through Steps
+        5–10c again.
 
-      > "tdd-reviewer blocked marking FEAT-{NNN} as Implemented ({N} BLOCK findings).
-      > Choose one:
-      > (a) I will fix the issues — re-run the affected TDD steps and invoke the reviewer
-      >     again.
-      > (b) Override and mark Implemented anyway — requires a written justification that
-      >     will be recorded in the feature spec under `Implementation Overrides`.
-      > Respond `(a) fix` or `(b) override: <your justification>`."
+   c. When fixes are complete, re-run 10a/10b/10c and then re-invoke `tdd-reviewer`.
+      Each loop produces a fresh JSON summary.
 
-   c. On **(a) fix**: loop back through the relevant TDD steps (typically Step 7 for
-      coverage-map issues, Step 8 for test failures, Step 9 for refactor-introduced
-      regressions). When fixes are complete, re-run 10a/10b/10c and then re-invoke
-      `tdd-reviewer`. There is no limit on iteration count; each loop must produce a
-      fresh JSON summary.
+   d. **Convergence check.** Compare the new BLOCK ID set against `previousBlockSet`:
+      - If `gate == "PASS"` → proceed to Step 11.
+      - If new BLOCK IDs ⊊ `previousBlockSet` (strictly fewer / different) → progress
+        was made. Update `previousBlockSet` to the new set and loop back to step (b).
+      - If new BLOCK IDs ⊇ `previousBlockSet` (same or worse) → the fix attempt did
+        not converge. **Halt** and surface the findings to the user (see step e).
 
-   d. On **(b) override**: require a non-empty justification string. Append the following
-      to the feature spec (append a new bullet to the existing section if one is already
-      present; otherwise create the section at the bottom of the file, after any
-      existing content):
-
-      ```markdown
-      ## Implementation Overrides
-      - {today's date YYYY-MM-DD} — Overrode tdd-reviewer BLOCK findings: {comma-separated
-        check IDs}. Justification: {user-supplied text verbatim}.
-      ```
-
-      Then proceed to Step 11.
+   e. **Halt and surface.** When the loop fails to converge:
+      - Render the latest reviewer findings table verbatim under a heading
+        `## tdd-reviewer findings — unresolved after auto-fix`. Do not summarise.
+      - Ensure the feature spec stays at `Draft` (do not mark `Implemented`). If it
+        was previously transitioned to `Approved` or `Implemented` and needs to be
+        rolled back, invoke `spark-status revert {docs-root}/feature/FEAT-{NNN}-{name}.md`
+        — do not hand-edit the `**Status**` field.
+      - Report to the user:
+        > "⛔ tdd-reviewer BLOCK findings did not resolve after an automatic fix
+        > attempt. The same BLOCK set ({comma-separated check IDs}) recurred. Feature
+        > spec left at Status: Draft. Review the findings above and re-run when
+        > resolved, or add an `Implementation Overrides` entry manually with a
+        > written justification before re-running."
+      - Stop. Do not proceed to Step 11.
 
 6. Whichever path was taken, record the outcome for the Step 11 summary:
-   - Final `gate` result (PASS or OVERRIDE)
+   - Final `gate` result (`PASS` or `HALT`)
+   - Number of auto-fix iterations executed
    - The full WARN/INFO finding list
-   - Any override bullet that was added
+
+**Manual override path.** A user may, after a halt, edit the feature spec to add an
+`Implementation Overrides` bullet (date — overridden BLOCK IDs — written justification)
+and re-run the agent. On the next run, if the same unresolved BLOCK IDs are listed in a
+recent `Implementation Overrides` entry, treat the gate as overridden and proceed to
+Step 11 with `gate = OVERRIDE`. The agent never writes the override entry itself.
 
 ---
 
@@ -600,23 +630,33 @@ gate before `Implemented` can be set.
 
 ### Feature spec update
 
-Update `{docs-root}/feature/FEAT-{NNN}-{name}.md`:
+Transition the feature spec from `Approved` to `Implemented` by invoking the
+`spark-status` **host skill** (via the `skill` tool — **not** `runSubagent`; there is
+no `spark-status` subagent). Do **not** edit the `**Status**`, `**Version**`, or
+`**Last Updated**` fields by hand:
 
-- Set `**Status**` to `Implemented`
-- Bump the minor version by 1 (after `X.9`, roll to `(X+1).0`, e.g. `1.9` → `2.0`)
-- Set `**Last Updated**` to today
+> Invoke the `skill` tool with `name: spark-status` and arguments
+> `implement {docs-root}/feature/FEAT-{NNN}-{name}.md`
 
-This is the canonical writer for `Status: Implemented` on a feature spec. Other agents
-(in particular `feature-editor`) must not set this status — the only other supported path
-is the `/spark-status implement` skill for manual cleanup, which applies the same
-version-bump rule.
+The skill enforces the implement-side prerequisite chain (sibling testplan at
+`{docs-root}/testplan/...` must be `Approved` or `Implemented`), bumps the minor
+version, and stamps `**Last Updated**`. If the skill rejects the transition (for
+example because Step 4b's testplan approval failed earlier and the testplan is still
+`Draft`), do not work around the rejection — surface it and halt.
 
-Only set `Implemented` if Step 10 confirmed every AC is covered, the required approved
-scaffolding exists, and the `tdd-reviewer` gate from Step 10d returned `PASS` (or was
-explicitly overridden with a recorded justification in the feature spec's
-`Implementation Overrides` section). If coverage gaps, structural gaps, or unresolved
-BLOCK findings exist, set `**Status**` to `Draft` and note the gaps for the user to
-resolve.
+This skill invocation, paired with the Step 10a.5 testplan transition, is the
+canonical path for marking a feature `Implemented`. Other agents (in particular
+`feature-editor`) must not set this status. The only other supported path is a manual
+`/spark-status implement` invocation by the user for cleanup or repair, which applies
+the same version-bump and prerequisite rules.
+
+Only invoke `spark-status implement` if Step 10 confirmed every AC is covered, the
+required approved scaffolding exists, and the `tdd-reviewer` gate from Step 10d
+returned `PASS` (or `OVERRIDE` based on a pre-existing `Implementation Overrides`
+entry written manually by the user). If coverage gaps, structural gaps, or
+unresolved BLOCK findings exist, **do not** invoke `spark-status implement`; instead
+invoke `spark-status revert` on the feature spec to ensure it stays at `Draft` and
+note the gaps for the user to resolve.
 
 Step 10c and Step 10d are both part of the implementation gate. A structurally incomplete
 result cannot be reported as implemented even if unit tests pass, and a test-quality
@@ -624,12 +664,22 @@ failure cannot be silently bypassed — either fix the findings or record an ove
 
 ### Summary report
 
+The summary's "Status" line must be produced from a fresh re-read of the spec and
+testplan files **after** the Step 11 `spark-status` invocations have completed. Never
+report a status that you have not just re-read from disk. If the on-disk Status of
+either file is anything other than `Implemented`, the summary must say so verbatim and
+must not claim the feature was marked Implemented.
+
 ```
 ## TDD summary — [FEAT-NNN]: [feature name]
 
+### Status (re-read from disk after Step 11)
+Feature spec:  {docs-root}/feature/FEAT-NNN-name.md          → Status: {value}
+Test plan:     {docs-root}/testplan/FEAT-NNN-name.testplan.md → Status: {value}
+
 ### Suite result
 [N] tests · [N] passed · [N] failed
-Test plan:          {docs-root}/feature/FEAT-NNN-name.testplan.md
+Test plan:          {docs-root}/testplan/FEAT-NNN-name.testplan.md
 Test file:          [path]
 Implementation:     [paths]
 
@@ -642,7 +692,7 @@ Implementation:     [paths]
 [Any ACs with no passing test, and why — blocks Implemented status]
 
 ### Structural gaps
-[Any required AppHost, companion project, test host, or other approved scaffold still
+[Any required companion project, test host, or other approved scaffold still
 missing or incorrectly wired]
 
 ### Test quality warnings
@@ -662,7 +712,8 @@ revealed. These are ADR candidates.]
 
 ### ADR candidates
 [Each ordering constraint or correctness decision worth recording — title and
-one-sentence rationale. Offer to run adr-editor to formalise them.]
+one-sentence rationale. `spark.agent.md` will offer to run adr-editor on these after
+the agent returns.]
 
 ### Remaining ambiguities
 [Any ACs skipped because the spec was still unclear after ambiguity resolution]
@@ -671,8 +722,5 @@ one-sentence rationale. Offer to run adr-editor to formalise them.]
 [Edge cases spotted during refactor that are not yet covered]
 ```
 
-### ADR candidate offer
-
-If ADR candidates were surfaced, prompt the user:
-> "The implementation revealed [N] decision(s) worth recording as ADRs:
-> [list titles]. Run adr-editor to formalise them?"
+ADR candidates are surfaced in the summary above for the orchestrator (`spark`) to
+present to the user. This agent does not prompt the user about ADR creation directly.

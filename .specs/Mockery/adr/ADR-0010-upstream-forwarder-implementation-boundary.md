@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0010: UpstreamForwarder Implementation Boundary
 

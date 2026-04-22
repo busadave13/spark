@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0008: Control multi-hop propagation depth via maxHops in X-Mockery-Mock JSON value
 

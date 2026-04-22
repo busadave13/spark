@@ -2,16 +2,16 @@
 
 # FEAT-006: Persistent Mock Storage
 
-> **Version**: 1.9<br>
+> **Version**: 1.12<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2025-07-14<br>
+> **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Implemented
+> **Status**: Approved
 
 ## Goal
 
-Implement persistent, human-readable storage of captured and manually authored mocks so they survive Mockery restarts, can be inspected or edited in place, and are isolated per development environment. The implementation uses a `BlobMockStore` that persists mocks as human-readable JSON blobs in Azure Blob Storage, with Azurite emulator used locally via Aspire AppHost (resource name `mockstorage`) and an Azure Storage account in cloud environments.
+Implement persistent, human-readable storage of captured and manually authored mocks so they survive Mockery restarts, can be inspected or edited in place, and are isolated per development environment. This gives developers and reviewers a predictable location and format for retained mock data across both local and cloud-hosted development workflows. The implementation uses a `BlobMockStore` that persists mocks as human-readable JSON blobs in Azure Blob Storage, with Azurite emulator used locally for development and an Azure Storage account in cloud environments.
 
 ## Motivation
 
@@ -29,7 +29,7 @@ This feature delivers **PRD Goal 5** — persist recorded and manually authored 
 - [x] Mocks are persisted as human-readable, indented JSON blobs in Azure Blob Storage under the configured `Mockery:Storage:ContainerName`.
 - [x] The `IMockStore` interface in the Mockery Core layer defines the storage abstraction; `BlobMockStore` in the Infrastructure layer implements it using the `Azure.Storage.Blobs` SDK.
 - [x] `BlobMockStore` is the sole `IMockStore` implementation. No provider selection — Azure Blob Storage is the only backend.
-- [x] Connection to Azure Blob Storage is resolved via Aspire service discovery (locally Azurite via `mockstorage` resource, cloud via Azure Storage account).
+- [x] Connection to Azure Blob Storage is configured through Azure SDK configuration (locally Azurite, cloud via Azure Storage account).
 - [x] Mocks written in a previous Mockery process are available for replay when Mockery restarts.
 - [x] When `Mockery:Storage:ReadOnly` is `true`, the store returns existing mocks but rejects writes with `MockStoreReadOnlyException`.
 - [x] Mock blobs are organized: recorded/stored artifacts at `{ContainerName}/{NormalizedHost}/{HttpMethod}/{FingerprintHash}.json`, manual mock index at `{ContainerName}/manual-index/{id}.json`. Legacy blob paths (`recorded/`, `manual/` prefixes) are searched on read for backward compatibility.
@@ -72,7 +72,7 @@ public interface IMockStore
 ```csharp
 /// <summary>
 /// Persists mock artifacts as human-readable JSON blobs in Azure Blob Storage.
-/// Locally backed by Azurite via Aspire AppHost; uses Azure Storage account in cloud.
+/// Locally backed by Azurite; uses Azure Storage account in cloud.
 /// Emits mockery.mock.hit_count on GetAsync match and mockery.mock.miss_count on GetAsync null.
 /// Internal visibility — consumers interact through IMockStore and IManualMockStore.
 /// </summary>
@@ -146,7 +146,7 @@ services.AddSingleton<IBlobMockContainerClient, AzureBlobMockContainerClient>();
 services.AddSingleton<BlobMockStore>();
 services.AddSingleton<IMockStore>(sp => sp.GetRequiredService<BlobMockStore>());
 services.AddSingleton<IManualMockStore>(sp => sp.GetRequiredService<BlobMockStore>());
-// BlobServiceClient is injected via Aspire's AddAzureBlobClient("mockstorage")
+// BlobServiceClient is resolved through Azure SDK configuration
 // IBlobMockContainerClient wraps BlobServiceClient for testability
 ```
 
@@ -298,8 +298,7 @@ Legacy blob paths (`recorded/` and `manual/` prefixes) are also searched on read
 | `RequestFingerprint` (from FEAT for request matching) | Internal | The fingerprint record must be defined and computed before storage can key artifacts. Depends on the matching/fingerprinting feature. |
 | Mockery proxy Core layer | Internal | Houses `IMockStore`, `StoredMockArtifact`, `RequestFingerprint`, `MockStorageOptions`, and `MockStoreReadOnlyException`. The Mockery proxy does not depend on Mockery.Shared — they maintain independent implementations. |
 | `Azure.Storage.Blobs` | NuGet | Azure Blob Storage SDK for blob read/write operations. |
-| Aspire service discovery | Runtime | Resolves connection to Azure Blob Storage (locally Azurite via `mockstorage` resource, cloud via Azure Storage account). |
+| Azure Blob Storage SDK configuration | Runtime | Resolves connection to Azure Blob Storage (locally Azurite, cloud via Azure Storage account). |
 | `System.Text.Json` | NuGet / Runtime | JSON serialization with `JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }`. |
 | `Microsoft.Extensions.Options` | NuGet / Runtime | Options-pattern binding for `MockStorageOptions`. |
 | `Microsoft.Extensions.Logging` | NuGet / Runtime | Structured logging for health, read-warnings, and write-failures. |
-

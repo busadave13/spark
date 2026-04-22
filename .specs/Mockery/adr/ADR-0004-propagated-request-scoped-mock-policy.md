@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0004: Propagate request-scoped mock policy across downstream HTTP hops
 

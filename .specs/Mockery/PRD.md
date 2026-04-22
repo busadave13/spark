@@ -2,9 +2,9 @@
 
 # Product Requirements Document
 
-> **Version**: 2.6<br>
+> **Version**: 2.7<br>
 > **Created**: 2026-04-01<br>
-> **Last Updated**: 2026-04-18<br>
+> **Last Updated**: 2026-04-20<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Approved

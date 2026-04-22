@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 # Architecture — Pressure Sensor Service
 
 > **Version**: 1.1<br>

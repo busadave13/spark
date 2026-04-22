@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 # ADR-0003: Operate as a Self-Contained Development Runtime
 
 > **Version**: 1.0<br>

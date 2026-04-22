@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0002: Use true-proxy forwarding as the default integration model
 

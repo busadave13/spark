@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 # ADR-0002: Use a File-Backed JSON Mock Dataset
 
 > **Version**: 1.0<br>

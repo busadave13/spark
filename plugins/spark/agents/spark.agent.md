@@ -2,7 +2,7 @@
 name: spark
 description: Orchestrator agent for spec-driven development. Routes tasks to specialized subagents for PRD, architecture, ADR, feature, and TDD implementation workflows. All feature implementation uses tdd-developer — tests written first, code written to those tests.
 model: Claude Haiku 4.5 (copilot)
-tools: [read, agent, search, todo]
+tools: [read, agent, search, skill, todo]
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -41,13 +41,13 @@ Match the user's intent to the correct subagent or skill. Never run a skill your
 | Review test suite quality | `tdd-reviewer` | subagent | "Review tests for FEAT-003 in Mockery" |
 | Review or show a test plan | `tdd-reviewer` | subagent | "Show me the test plan for FEAT-003" |
 | Resolve review comments | `comments-editor` | subagent | "Resolve comments on the Mockery PRD" |
-| Transition artifact Status (approve / revert / implement / status) | `spark-status` | skill | "Approve the Mockery PRD", "Mark FEAT-001 implemented" |
+| Transition artifact Status (approve / revert / implement / status) | `spark-status` | skill (invoke via the `skill` tool, **not** `runSubagent`) | "Approve the Mockery PRD", "Mark FEAT-001 implemented" |
 | Create a new project (PRD + architecture) | `prd-editor` then `architecture-editor` | chained subagents via new-project preflight | "Create a new project called Mockery" |
 | Create a PRD (no project context yet) | `prd-editor` | subagent via new-project preflight | "Create a PRD" |
 | Create architecture (no project context yet) | `architecture-editor` | subagent via new-project preflight | "Create an architecture" |
 
-Never route an end-user "create a new project" request to `dotnet-webapi-project` or
-`dotnet-blazor-project`. Those skills only bootstrap or reconcile
+Never route an end-user "create a new project" request to `dotnet-webapi-project`.
+That skill only bootstraps or reconciles
 `.github/instructions/{project}.instructions.md` after Spark has already determined that
 repo-specific instructions are the missing dependency.
 
@@ -78,14 +78,9 @@ If required scaffolding is missing, classify it before stopping:
 - If it is only a repo prerequisite and is not part of the approved target state, stop and
    surface an explicit initialization/reconciliation step.
 - If the approved architecture, ADRs, or feature specs explicitly require that scaffold as
-   part of the system being implemented — for example an AppHost, `Test.AppHost`, shared
-   companion project, or required Aspire resource — `tdd-developer` must treat it as
-   implementation scope and create it rather than silently proceeding without it.
-
-When a namespace-root AppHost is required by repo instructions or approved docs,
-`tdd-developer` must also verify that the AppHost is named `{Namespace}.AppHost`, lives
-directly under the namespace root, and registers every runnable main project in that
-namespace so the local Aspire topology can be started with `dotnet run`.
+   part of the system being implemented — for example a shared companion project or a
+   required runtime resource — `tdd-developer` must treat it as implementation scope and
+   create it rather than silently proceeding without it.
 
 Never let implementation continue in a fallback or library-only layout just because the
 instruction file exists, and never mark a feature complete while required approved
@@ -186,6 +181,7 @@ If the user selects Abort at any step, stop immediately. Do not invoke any edito
 - **Named subagents for all document operations.** For PRD creation/updates, PRD reviews, architecture creation/updates, architecture reviews, ADR creation, ADR reviews, feature creation/updates, feature reviews, TDD implementation, TDD reviews, and comment resolution, invoke `runSubagent` with the corresponding `agentName`. Pass the project name, file paths, and full user context as the prompt. Do **not** load these as skills — they are always invoked as named subagents.
 - **`comments-editor` scope includes `.testplan.md` files.** If the user asks to resolve comments on a test plan file, pass the `.testplan.md` path to `comments-editor` exactly as you would for any other spark document.
 - **Parallel ADR reviews.** When reviewing multiple ADRs, invoke one `adr-reviewer` subagent per ADR file in parallel. Each subagent receives a single ADR path and reviews it independently. Collect all results before reporting to the user.
+- **`spark-status` is a host skill, not a subagent.** Invoke it via the host's `skill` tool with name `spark-status` and a single-line argument string of the form `<subcommand> <path>` (e.g. `approve .specs/Mockery/PRD.md`, `implement .specs/Mockery/feature/FEAT-001-true-proxy-forwarding.md`). Do **not** call `runSubagent` for it — there is no `spark-status` subagent. If the `skill` tool ever appears unavailable, halt and surface that to the user rather than hand-editing the metadata block.
 
 ## Reviewer agents are read-only
 
@@ -209,13 +205,12 @@ When a reviewer agent returns findings that recommend changes:
    | `tdd-reviewer` | `tdd-developer` |
 
    When `tdd-reviewer` returns `BLOCK` findings, delegating to `tdd-developer` resumes
-   the appropriate phase of the TDD cycle. Two of the BLOCK codes have stronger semantics:
-   `T16` (missing test plan file) and `T17` (coverage map mismatch) require re-running the
-   full TDD cycle from Step 4 (test plan approval gate). Warn the user that this means
-   re-approving the test plan before any fixes are applied. All other BLOCK codes
-   (`T01`–`T05`, `T14`, `C01`, `C02`, `C04`) re-enter at the relevant red/green/refactor
-   step without re-approval. `WARN` findings are advisory and do not require re-routing
-   unless the user explicitly asks to address them.
+   the appropriate phase of the TDD cycle. `tdd-developer` runs the BLOCK fix loop
+   autonomously — including for `T16` (missing test plan file) and `T17` (coverage map
+   mismatch), which trigger a return to its Step 4 and a rewrite of the test plan file
+   without any user re-approval. `tdd-developer` only halts and surfaces findings to the
+   user if its auto-fix loop fails to converge. `WARN` findings are advisory and do not
+   require re-routing unless the user explicitly asks to address them.
 
 4. **Never attempt to apply review fixes yourself.** Always route approved changes through the correct subagent.
 
@@ -239,7 +234,7 @@ For compound requests like "Set up a new project with PRD and architecture":
 4. Continue until all steps are done.
 5. Summarize results to the user.
 
-Do not insert `dotnet-webapi-project` or `dotnet-blazor-project` into this flow unless the
+Do not insert `dotnet-webapi-project` into this flow unless the
 user explicitly asks to create or reconcile `.github/instructions/{project}.instructions.md`,
 or a downstream implementation step has stopped on missing repo instructions.
 
@@ -249,19 +244,21 @@ For "implement all approved features":
 2. Create a todo list — one entry per feature.
 3. Invoke `tdd-developer` for each feature sequentially (not in parallel — each run modifies
    the codebase and the suite must stay green between features).
-4. After each feature completes, present the TDD summary and any ADR candidates before
-   proceeding to the next feature.
+4. Proceed automatically to the next feature when each `tdd-developer` run completes
+   successfully. Do not pause for per-feature acknowledgement. Halt only if a
+   `tdd-developer` run itself halts (ambiguous AC, missing approved scaffolding, or
+   unresolved BLOCK findings) — in that case, surface the blocking output and stop.
+5. After all features are complete (or the run halts), present a consolidated report:
+   each feature's TDD summary plus the union of all ADR candidates surfaced. Then run
+   the standard "TDD and ADR handoff" prompt once over the combined ADR-candidate list.
 
 ## Key principles
 
 - **Project location**: Projects are organized in `.specs/` folders, which can be located anywhere in the repo
 - **Specification-driven**: All work is guided by PRD, ARCHITECTURE, and feature specifications
 - **TDD is the only implementation path**: All feature implementation goes through `tdd-developer` — tests written first, code written to those tests
-- **Approved topology is implementation scope**: When approved docs require hosts,
-  companion projects, or Aspire topology, implementation must create and verify them;
-  they are not optional follow-up scaffolding
-- **Namespace AppHost is authoritative**: When a namespace folder uses Aspire, the
-   namespace-root `{Namespace}.AppHost` must exist and include every runnable main project
-   in that namespace for local `dotnet run`
+- **Approved topology is implementation scope**: When approved docs require hosts or
+  companion projects, implementation must create and verify them; they are not optional
+  follow-up scaffolding
 - **Consistent formatting**: All documents follow Spark templates — enforced by the subagents, not by you
 - **No manual catalog management**: Subagents locate `.specs/` folders directly

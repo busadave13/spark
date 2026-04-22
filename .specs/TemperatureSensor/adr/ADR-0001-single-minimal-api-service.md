@@ -2,7 +2,7 @@
 
 > **Version**: 1.0<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-20<br>
+> **Last Updated**: 2026-04-14<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Temperature Sensor WebAPI Service<br>
 > **Status**: Approved

@@ -80,14 +80,14 @@ Ask the user for the namespace (e.g., a team name, product line, or organization
 
 ### Resolve Project Type
 
-Determine `{resolved-project-type}` — required; allowed values are exactly `dotnet-webapi` or `dotnet-blazor`.
+Determine `{resolved-project-type}` — required; the only allowed value is `dotnet-webapi`.
 
 1. **Update pass**: read the `**Project Type**` field from the existing `ARCHITECTURE.md` header.
    - If present and valid, reuse it as `{resolved-project-type}`.
-   - If missing or invalid, prompt the user (re-ask on any value other than `dotnet-webapi` or `dotnet-blazor`).
+   - If missing or invalid, prompt the user (re-ask on any value other than `dotnet-webapi`).
 2. **New document**: prompt the user:
-   > "What is the project type? Allowed values: `dotnet-webapi` or `dotnet-blazor`."
-   Re-ask until the response matches exactly one of the allowed values.
+   > "What is the project type? Allowed value: `dotnet-webapi`."
+   Re-ask until the response matches exactly the allowed value.
 
 This field is read by downstream agents (e.g., tdd-developer) to choose the correct
 project-initialization skill. Do not infer it from Tech Stack content — it must be set explicitly.
@@ -140,7 +140,7 @@ The architecture must reflect the actual codebase. Before interviewing the user,
 2. **Explore the project structure.** List the top-level directories and key files (solution files, project files, `package.json`, `Dockerfile`, configuration files, etc.) to understand the project layout, languages, and frameworks in use.
 3. **Identify components and layers.** Scan for service entry points, API controllers/endpoints, middleware, data access layers, shared libraries, and infrastructure code. Read representative files to understand responsibilities and boundaries.
 4. **Trace data flow and dependencies.** Look at dependency injection setup, client registrations, configuration loading, and inter-service communication patterns to map how data moves through the system.
-5. **Note architectural decisions already embedded in code.** Identify patterns such as database choices (connection strings, ORM usage), auth mechanisms, messaging/eventing, caching strategies, and deployment configurations (Dockerfiles, Aspire app hosts, Helm charts, etc.).
+5. **Note architectural decisions already embedded in code.** Identify patterns such as database choices (connection strings, ORM usage), auth mechanisms, messaging/eventing, caching strategies, and deployment configurations (Dockerfiles, Helm charts, etc.).
 
 Use sub-agents for parallel codebase exploration when the project contains 10+ services, multiple languages, or more than 500 source files. For smaller projects, explore directly. Summarize findings concisely — the goal is to inform the architecture document, not to reproduce the code.
 

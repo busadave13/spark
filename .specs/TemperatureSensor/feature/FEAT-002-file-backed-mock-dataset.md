@@ -1,6 +1,7 @@
+<!-- SPARK -->
 # FEAT-002: File-Backed Mock Dataset
 
-> **Version**: 1.0.1<br>
+> **Version**: 1.0<br>
 > **Created**: 2026-04-14<br>
 > **Last Updated**: 2026-04-18<br>
 > **Owner**: Dave Harding<br>
@@ -18,14 +19,14 @@ This feature implements FR-003 and FR-006 while operationalizing ADR-0002. The P
 ## User Stories
 
 - As a **Service Developer**, I want **the service to read mock temperature data from curated JSON files** so that **I can inspect and update test fixtures without changing application code**.
-- As a **Test Automation Engineer**, I want **the same lookup key to resolve to the same JSON artifact on every run** so that **integration tests remain deterministic across machines and environments**.
+- As a **Integration Test Author**, I want **the same lookup key to resolve to the same JSON artifact on every run** so that **integration tests remain deterministic across machines and environments**.
 
 ## Acceptance Criteria
 
 - [x] The service reads seeded mock artifacts from the folder configured by `TemperatureSensor:MockDataPath`, defaulting to `Mocks`.
 - [x] Each artifact file name is derived from the canonical region and sensor ID pair so one lookup key maps to one file without secondary indexes or external state.
 - [x] Each valid artifact deserializes into a contract containing `sensorId`, `region`, `temperature`, `humidity`, and `unit`, and lookup results echo those values through the API response.
-- [x] Startup validation fails clearly when the configured dataset path is missing, unreadable, or contains malformed JSON required for seeded lookups.
+- [x] Startup validation fails clearly when the configured dataset path is missing, unreadable, or contains malformed JSON required for seeded lookups; v1 validation checks path accessibility, readability, and artifact shape consistency for discovered artifacts, but does not require every configured supported region to have at least one seeded artifact.
 - [x] Runtime lookup never mutates dataset files and never falls back to generated data when a file is absent or invalid.
 
 ## API / Interface Definition
@@ -69,6 +70,7 @@ DatasetValidationResult {
 | The configured `Mocks` folder does not exist at startup | Startup validation fails and the service does not report ready until the folder is restored or configuration is corrected. |
 | A file named for a valid lookup key contains malformed JSON | The dataset provider reports a configuration error, the file is not used for responses, and the condition is surfaced through logs and readiness failure details. |
 | A file exists but its internal `region` or `sensorId` does not match the lookup key encoded in the file name | Validation treats the artifact as invalid and reports a deterministic configuration failure rather than trusting the mismatched payload. |
+| A configured supported region currently has no seeded artifacts | Startup validation still succeeds when the dataset path is accessible and discovered artifacts are readable and well-formed; lookups for missing keys continue to miss deterministically, and region discovery may return an empty list. |
 | Two callers request the same lookup key concurrently | Both requests resolve the same artifact content without mutating shared state, and both responses return the same seeded values. |
 
 ## Out of Scope
@@ -83,7 +85,3 @@ DatasetValidationResult {
 - Requires: ADR-0003 for the no-external-dependency runtime boundary
 - Supports: FEAT-001 by providing the deterministic artifact source used during lookup
 - Supports: FEAT-003 by enabling readiness checks against the configured dataset path
-
-## Open Questions
-
-- [ ] Should startup validation require every configured supported region to have at least one seeded artifact, or is validating artifact readability alone sufficient for v1?

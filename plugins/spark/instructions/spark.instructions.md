@@ -25,18 +25,15 @@ applyTo: "**/spark.agent.md"
     stop and surface an explicit initialization/reconciliation step.
   - If approved architecture, ADRs, or feature specs require it as part of the feature's
     target system or test topology, treat it as implementation scope and create it.
-- When repo instructions or approved docs require a namespace-root AppHost, the agent must
-  also verify that the AppHost is named `{Namespace}.AppHost`, lives directly under the
-  namespace folder root, and registers every runnable main project in that namespace for
-  local Aspire `dotnet run`.
 - Do not silently work around the mismatch by implementing in an alternative or library-only
   layout.
-- Do not mark a feature implemented while required approved scaffolding such as AppHost,
-  `Test.AppHost`, or required Aspire resources is still missing.
+- Do not mark a feature implemented while required approved scaffolding is still missing.
 - `tdd-developer` must invoke `tdd-reviewer` as a mandatory gate before marking a feature
-  `Implemented`. `BLOCK`-severity findings halt the transition unless the user records an
-  override with written justification in the feature spec's `Implementation Overrides`
-  section.
+  `Implemented`. `BLOCK`-severity findings trigger an autonomous fix loop inside
+  `tdd-developer` (fix → re-run → re-review). The agent only halts and surfaces findings
+  to the user when the same unresolved BLOCK set recurs after a fix attempt. After a
+  halt, a user may add a manual `Implementation Overrides` entry (date, BLOCK IDs, written
+  justification) to the feature spec and re-run; the agent itself never writes the override.
 
 ### Agent Routing
 
@@ -81,14 +78,14 @@ When the user says **"create a new project"**, **"create a PRD"**, or **"create 
 **PRD is not a prerequisite for architecture.** `architecture-editor` can produce `ARCHITECTURE.md` for a project that has no `PRD.md` — the codebase review and user interview cover the gap.
 
 Creating or updating `.github/instructions/{project}.instructions.md` bootstraps repo
-guidance only. It does not, by itself, create or verify an AppHost, runnable web host, or
-other required companion projects.
+guidance only. It does not, by itself, create or verify a runnable web host or other
+required companion projects.
 
 When approved docs require that missing structure as part of the implementation target,
 Spark must create it during TDD rather than treating it as an ignorable omission.
 
-The `dotnet-webapi-project` and `dotnet-blazor-project` skills are for instruction-file
-bootstrap or reconciliation only. They are valid only when the user explicitly asks to
+The `dotnet-webapi-project` skill is for instruction-file
+bootstrap or reconciliation only. It is valid only when the user explicitly asks to
 create or update the repo instruction file, or when a later Spark implementation step has
 already identified missing repo instructions as a dependency.
 
@@ -101,18 +98,19 @@ When a reviewer agent (prd-reviewer, architecture-reviewer, adr-reviewer, featur
 - `tdd-reviewer` issues → `tdd-developer` (with one exception: see below)
 
 **`tdd-reviewer` has two invocation paths:**
-- **Inline (mandatory gate):** `tdd-developer` invokes `tdd-reviewer` at Step 10d before marking a feature `Implemented`. `BLOCK` findings are resolved in the same run — either fixed by looping back through the relevant TDD steps, or overridden by appending a justification to the feature spec's `Implementation Overrides` section. No separate handoff to **spark**.
+- **Inline (mandatory gate):** `tdd-developer` invokes `tdd-reviewer` at Step 10d before marking a feature `Implemented`. `BLOCK` findings are resolved in the same run by an autonomous fix loop (fix → re-run 10a/10b/10c → re-invoke `tdd-reviewer`). The loop continues while progress is made (BLOCK ID set strictly shrinks). If the same unresolved set recurs after a fix attempt, `tdd-developer` halts, surfaces the findings, and leaves the feature at `Status: Draft`. There is no in-agent override prompt; a user may add an `Implementation Overrides` entry manually and re-run. No separate handoff to **spark**.
 - **Standalone (ad-hoc audit):** When a user invokes `tdd-reviewer` directly against an already-Implemented feature, findings flow back through **spark** to `tdd-developer` as with the other reviewers.
 
 **`tdd-reviewer` BLOCK findings:** `BLOCK` severity findings (`T01`–`T05`, `T14`, `T16`,
 `T17`, `C01`, `C02`, `C04`) prevent the feature from moving to `Implemented`. When
 delegated back to `tdd-developer`, most BLOCK codes resume at the relevant red/green/refactor
-step. Two have stronger semantics: `T16` (missing test plan file) and `T17` (coverage map
-mismatch) re-run the full TDD cycle from Step 4 (test plan approval gate). This applies to
-both invocation paths.
+step. `T16` (missing test plan file) and `T17` (coverage map mismatch) trigger a return
+to Step 4 and a rewrite of the test plan file in place — no re-approval round trip.
+This applies to both invocation paths.
 
-**Special case — T16/T17 flags from `tdd-reviewer`:** because re-routing means re-approving
-the test plan, surface this clearly to the user before kicking off the rerun.
+**Special case — T16/T17 flags from `tdd-reviewer`:** the test plan file is rewritten
+automatically as part of the fix loop. The user is only notified if the rewrite still
+leaves BLOCK findings unresolved after the loop converges.
 
 ### TDD-to-ADR Handoff
 After `tdd-developer` completes implementation, it surfaces ADR candidates (decisions made or crystallized during TDD). **spark** presents these candidates to the user with a prompt: "These decisions were surfaced during TDD. Create ADRs for them?" If the user accepts, **spark** invokes `adr-editor` for each candidate in sequence, then offers to add them to `ARCHITECTURE.md`.
@@ -125,6 +123,8 @@ To implement all approved features:
 1. **spark** scans `{docs-root}/feature/` for all `FEAT-*.md` files with `Status: Approved`
 2. Creates a todo list (one entry per feature)
 3. Invokes `tdd-developer` for each feature **sequentially** (never in parallel — each run modifies the codebase, and the test suite must stay green between features)
+4. Proceeds automatically between features. Halts only if a `tdd-developer` run itself halts on a blocker (ambiguous AC, missing approved scaffolding, or unresolved BLOCK findings)
+5. After all features complete (or the run halts), surfaces a consolidated summary and runs the standard TDD-to-ADR handoff prompt once over the union of ADR candidates from all features
 
 ### `prd-editor` Review Mode
 Although `prd-reviewer` is the read-only review agent, `prd-editor` also has an internal review path: if the user asks to "review the PRD," `prd-editor` skips the interview and generation steps and runs its review checklist directly. Both paths are valid; the choice depends on whether the user wants to make edits in the same session.

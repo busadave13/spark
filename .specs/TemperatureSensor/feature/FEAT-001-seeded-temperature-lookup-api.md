@@ -1,6 +1,7 @@
+<!-- SPARK -->
 # FEAT-001: Seeded Temperature Lookup API
 
-> **Version**: 1.1.0<br>
+> **Version**: 1.1<br>
 > **Created**: 2026-04-14<br>
 > **Last Updated**: 2026-04-18<br>
 > **Owner**: Dave Harding<br>
@@ -18,7 +19,7 @@ This feature implements FR-001 through FR-005 from PRD Section 6. The PRD identi
 ## User Stories
 
 - As a **Service Developer**, I want **to request a mock temperature reading for a known sensor in a supported region** so that **my dependent service can exercise temperature-driven logic against one shared test endpoint**.
-- As a **Test Automation Engineer**, I want **the lookup API to return the same success and error shapes on every run** so that **integration tests can assert the contract without custom per-suite adapters**.
+- As a **Integration Test Author**, I want **the lookup API to return the same success and error shapes on every run** so that **integration tests can assert the contract without custom per-suite adapters**.
 
 ## Acceptance Criteria
 
@@ -130,7 +131,3 @@ LookupError {
 - Requires: ADR-0001, ADR-0002, ADR-0003
 - Requires: a readable mock dataset path configured via `TemperatureSensor:MockDataPath`
 - Requires: FEAT-002 for the seeded file format and dataset validation behavior used by this API
-
-## Open Questions
-
-None - v1 seeded data uses `C`, and the API echoes the stored artifact value without constraining future dataset expansion.

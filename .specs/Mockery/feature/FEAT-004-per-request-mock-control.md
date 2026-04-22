@@ -2,12 +2,12 @@
 
 # FEAT-004: Per-Request Mock Control
 
-> **Version**: 1.9<br>
+> **Version**: 2.1<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2025-07-18<br>
+> **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Implemented
+> **Status**: Approved
 
 ## Goal
 
@@ -226,4 +226,3 @@ public interface IMockPolicyFeature
 - **Mockery transport boundary state**: Owns `IMockPolicyFeature` and `HttpContext.Features` storage for the current request only.
 - **Policy resolution and matching core component**: Computes request fingerprints, applies the `MockPolicy`, and chooses replay vs passthrough vs record.
 - **`Mockery:Capture:ExcludedHosts` configuration**: Must already be loaded and available to the policy-resolution layer.
-

@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0007: Use Azure Blob Storage as the persistence backend for mock artifacts
 
@@ -13,19 +13,19 @@
 
 ## 1. Context
 
-Mockery needs durable, environment-scoped mock storage that works consistently across local developer workstations and cloud-hosted development sandboxes. The original implementation used direct filesystem storage, but this introduces portability issues: filesystem paths differ across operating systems, container environments require volume mounts, and the storage API diverges between local and cloud environments. Azure Blob Storage via the Aspire integration provides a consistent programmatic API across local development (Azurite emulator) and cloud (Azure Storage accounts) while keeping stored artifacts accessible for inspection. The Aspire AppHost can provision and manage the Azurite emulator lifecycle automatically, removing manual setup from the developer workflow. Mock artifacts remain human-readable JSON blobs, one per mock artifact, stored in a configurable blob container (default: `mocks`).
+Mockery needs durable, environment-scoped mock storage that works consistently across local developer workstations and cloud-hosted development sandboxes. The original implementation used direct filesystem storage, but this introduces portability issues: filesystem paths differ across operating systems, container environments require volume mounts, and the storage API diverges between local and cloud environments. Azure Blob Storage provides a consistent programmatic API across local development (Azurite emulator) and cloud (Azure Storage accounts) while keeping stored artifacts accessible for inspection. Azurite can be provisioned through standard development tooling for local development workflows. Mock artifacts remain human-readable JSON blobs, one per mock artifact, stored in a configurable blob container (default: `mocks`).
 
 ---
 
 ## 2. Decision
 
-> We will use Azure Blob Storage as the sole persistence backend for all mock artifacts, with the Azurite emulator provisioned via Aspire AppHost (resource name: `mockstorage`) for local development and Azure Storage accounts for cloud and sandbox environments.
+> We will use Azure Blob Storage as the sole persistence backend for all mock artifacts, with the Azurite emulator provisioned for local development (via Docker or container tooling) and Azure Storage accounts for cloud and sandbox environments.
 
 ---
 
 ## 3. Rationale
 
-Azure Blob Storage provides a single storage API that works identically whether the backing store is a local Azurite emulator or a cloud Azure Storage account. This eliminates the code-path divergence that filesystem storage creates between local and cloud environments — the same `BlobContainerClient` calls work in both contexts without conditional logic. Aspire's built-in Azurite resource support means local developers get a working blob store automatically when they start the AppHost, with no manual Docker or emulator setup. Blobs remain individually addressable and downloadable as human-readable JSON, preserving the inspectability requirement established in ADR-0005. The Azure SDK's retry, streaming, and concurrency features also provide more robust I/O semantics than raw filesystem operations.
+Azure Blob Storage provides a single storage API that works identically whether the backing store is a local Azurite emulator or a cloud Azure Storage account. This eliminates the code-path divergence that filesystem storage creates between local and cloud environments — the same `BlobContainerClient` calls work in both contexts without conditional logic. Local developers can run a working blob store via Azurite through Docker or other container tooling. Blobs remain individually addressable and downloadable as human-readable JSON, preserving the inspectability requirement established in ADR-0005. The Azure SDK's retry, streaming, and concurrency features also provide more robust I/O semantics than raw filesystem operations.
 
 ---
 
@@ -35,7 +35,7 @@ Azure Blob Storage provides a single storage API that works identically whether 
 **Why rejected:** Filesystem storage does not transfer between environments, requires explicit volume mounts in containerized scenarios, and creates inconsistency between the local storage API (System.IO) and cloud storage API (Azure SDK). This divergence increases the testing surface and makes it harder to guarantee that behavior observed locally matches cloud behavior.
 
 ### Use a relational database (SQLite or PostgreSQL)
-**Why rejected:** A relational database would make mock artifacts opaque — stored as rows rather than individually inspectable files — conflicting with the human-readable inspectability requirement from ADR-0005. It would also introduce schema management, migration tooling, and a heavier local dependency compared to Azurite, which the Aspire AppHost already supports natively.
+**Why rejected:** A relational database would make mock artifacts opaque — stored as rows rather than individually inspectable files — conflicting with the human-readable inspectability requirement from ADR-0005. It would also introduce schema management, migration tooling, and a heavier local dependency compared to Azurite.
 
 ---
 
@@ -43,7 +43,7 @@ Azure Blob Storage provides a single storage API that works identically whether 
 
 ### Positive Consequences
 - Consistent storage API across all environments eliminates conditional code paths for local versus cloud persistence.
-- Aspire AppHost handles Azurite emulator lifecycle automatically, so developers do not need to install or manage storage emulators manually.
+- Azurite can be managed through standard development tooling without additional custom setup.
 - Mock artifacts remain human-readable JSON blobs that can be downloaded, inspected, and edited through Azure Storage Explorer, `az storage blob`, or direct HTTP access to Azurite.
 - No filesystem path management, platform-specific path separators, or volume mount configuration is needed.
 

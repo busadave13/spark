@@ -30,7 +30,7 @@ requirements.
 
 ### What it contains
 - **Header block** — Version, Created, Last Updated, Owner, Namespace, Project, Project Type, Status
-  - **Project Type** is required; valid values are `dotnet-webapi` or `dotnet-blazor`. Downstream agents (e.g., tdd-developer) read this field to decide which project-initialization skill to run.
+  - **Project Type** is required; the only valid value is `dotnet-webapi`. Downstream agents (e.g., tdd-developer) read this field to decide which project-initialization skill to run.
 - **North Star paragraph** — one paragraph orienting the reader to what the system does
   and for whom
 

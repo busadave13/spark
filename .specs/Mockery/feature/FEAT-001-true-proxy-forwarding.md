@@ -2,16 +2,16 @@
 
 # FEAT-001: True-Proxy Forwarding
 
-> **Version**: 1.18<br>
+> **Version**: 1.24<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2025-07-25<br>
+> **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Implemented
 
 ## Goal
 
-True-Proxy Forwarding enables Mockery to accept any outbound HTTP request routed through it and forward it transparently to the real upstream destination without requiring per-upstream registration or configuration. New upstream dependencies work immediately, and when recording is active, responses are captured as human-readable mock artifacts for later replay. This directly supports PRD Goal 1 (reduce dependency startup time) and Architecture Principle 1 (transparent interception over curated onboarding).
+True-Proxy Forwarding enables Mockery to accept any outbound HTTP request routed through it and forward it transparently to the real upstream destination without requiring per-upstream registration or configuration. This keeps new and changing HTTP dependencies usable immediately in standard development flows while preserving Mockery as the common interception point for later replay behavior. When recording is active, responses are captured as human-readable mock artifacts for later replay, directly supporting PRD Goal 1 (reduce dependency startup time) and Architecture Principle 1 (transparent interception over curated onboarding).
 
 ## Motivation
 
@@ -88,7 +88,7 @@ GET /openapi/v1.json  — OpenAPI document (existing, development-only)
 
 ### StoredMockArtifact
 
-The persisted mock artifact written to storage when a valid `X-Mockery-Mock` header is present, replay lookup misses, and the upstream returns a 2xx response. Stored as a single JSON blob per interaction in the Azure Blob Storage container defined by `Mockery:Storage:ContainerName` (default: `"mocks"`). Connection is resolved via Aspire service discovery (resource name `mockstorage` — Azurite locally, Azure Storage account in cloud).
+The persisted mock artifact written to storage when a valid `X-Mockery-Mock` header is present, replay lookup misses, and the upstream returns a 2xx response. Stored as a single JSON blob per interaction in the Azure Blob Storage container defined by `Mockery:Storage:ContainerName` (default: `"mocks"`). Connection is resolved through Azure Blob Storage configuration (Azurite locally, Azure Storage account in cloud).
 
 ```csharp
 // Persisted as JSON — blob path: {ContainerName}/{normalized-host}/{http-method}/{fingerprint-hash}.json

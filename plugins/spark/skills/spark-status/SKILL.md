@@ -37,14 +37,19 @@ the file.
 | `ARCHITECTURE.md` at `{docs-root}/ARCHITECTURE.md` | `architecture` |
 | `ADR-NNNN-*.md` at `{docs-root}/adr/` | `adr` |
 | `FEAT-NNN-*.md` at `{docs-root}/feature/` (not `.testplan.md`) | `feature` |
-| `FEAT-NNN-*.testplan.md` at `{docs-root}/feature/` | `testplan` |
+| `FEAT-NNN-*.testplan.md` at `{docs-root}/testplan/` | `testplan` |
 
 If the file does not match any pattern or is not inside a `.specs/{project}/` folder,
 reject:
 
 > "⛔ `{path}` is not a recognized Spark artifact. Expected one of: PRD.md,
-> ARCHITECTURE.md, adr/ADR-*.md, feature/FEAT-*.md, feature/FEAT-*.testplan.md under a
+> ARCHITECTURE.md, adr/ADR-*.md, feature/FEAT-*.md, testplan/FEAT-*.testplan.md under a
 > `.specs/{project}/` folder."
+
+> **Note on legacy location.** Earlier versions of this workflow co-located
+> `FEAT-NNN-*.testplan.md` files inside `{docs-root}/feature/`. Reject any
+> `*.testplan.md` found there with the message above and direct the user to move it to
+> `{docs-root}/testplan/`. Do not silently accept the legacy location.
 
 ## Step 2 — Read and parse the header
 
@@ -114,14 +119,19 @@ Apply the transition (Step 5).
 | `architecture` | None (PRD is optional) |
 | `adr` | `{docs-root}/ARCHITECTURE.md` has `**Status**: Approved` |
 | `feature` | `{docs-root}/ARCHITECTURE.md` has `**Status**: Approved` |
-| `testplan` | Sibling `FEAT-NNN-*.md` (same prefix, no `.testplan.md`) has `**Status**: Approved` or `Implemented` |
+| `testplan` | Sibling `FEAT-NNN-*.md` at `{docs-root}/feature/` (same prefix, no `.testplan.md`) has `**Status**: Approved` or `Implemented` |
 
 ### `implement` prerequisites
 
 | Artifact type | Required state |
 |---|---|
-| `feature` | Sibling `FEAT-NNN-*.testplan.md` has `**Status**: Approved` or `Implemented` |
-| `testplan` | Sibling `FEAT-NNN-*.md` has `**Status**: Approved` or `Implemented` |
+| `feature` | Sibling `FEAT-NNN-*.testplan.md` at `{docs-root}/testplan/` has `**Status**: Approved` or `Implemented` |
+| `testplan` | Sibling `FEAT-NNN-*.md` at `{docs-root}/feature/` has `**Status**: Approved` or `Implemented` |
+
+**Sibling resolution.** Test plans live in `{docs-root}/testplan/` and feature specs live
+in `{docs-root}/feature/`. To resolve a sibling, take the file's basename without the
+`.testplan` segment (for testplans) or with `.testplan` appended before `.md` (for
+features), and look in the sibling folder. Do **not** look in the same folder.
 
 ### How to check
 

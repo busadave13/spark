@@ -1,6 +1,7 @@
+<!-- SPARK -->
 # FEAT-003: Self-Contained Runtime and Diagnostics
 
-> **Version**: 1.0.1<br>
+> **Version**: 1.0<br>
 > **Created**: 2026-04-14<br>
 > **Last Updated**: 2026-04-18<br>
 > **Owner**: Dave Harding<br>
@@ -18,7 +19,7 @@ This feature implements FR-007 and the operational expectations in PRD Section 7
 ## User Stories
 
 - As a **Service Developer**, I want **the service to start with committed defaults and fail clearly when required mock data is unavailable** so that **I can diagnose local environment issues quickly**.
-- As a **Test Automation Engineer**, I want **health and readiness signals plus structured lookup diagnostics** so that **test orchestration can detect whether the seeded service is actually ready before integration scenarios run**.
+- As a **Integration Test Author**, I want **health and readiness signals plus structured lookup diagnostics** so that **test orchestration can detect whether the seeded service is actually ready before integration scenarios run**.
 
 ## Acceptance Criteria
 
@@ -113,7 +114,3 @@ DiagnosticLogEvent {
 - Requires: ADR-0001 and ADR-0003
 - Requires: FEAT-002 so readiness checks can validate the configured dataset path and artifact readability
 - Supports: FEAT-001 by providing the operational environment in which the lookup API runs
-
-## Open Questions
-
-None — all questions resolved.

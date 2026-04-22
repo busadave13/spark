@@ -2,12 +2,12 @@
 
 # FEAT-005: Multi-Hop Interception
 
-> **Version**: 2.1<br>
+> **Version**: 2.4<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-07-16<br>
+> **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Implemented
+> **Status**: Approved
 
 ## Goal
 
@@ -219,4 +219,3 @@ Mockery.Shared depends only on the `IMockPolicyAccessor` abstraction. ASP.NET Co
 | ADR-0004 | Defines request-scoped mock policy propagation as the architectural model. |
 | ADR-0006 | Defines the single `X-Mockery-Mock` header contract used for propagation. |
 | ADR-0008 | Defines the controlled propagation depth model via the `maxHops` field in the `X-Mockery-Mock` JSON value. |
-

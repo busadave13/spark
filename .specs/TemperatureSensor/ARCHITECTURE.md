@@ -1,10 +1,13 @@
+<!-- SPARK -->
 # Architecture - Temperature Sensor WebAPI Service
 
 > **Version**: 1.0<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-14<br>
+> **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
+> **Namespace**: Test<br>
 > **Project**: Temperature Sensor<br>
+> **Project Type**: dotnet-webapi<br>
 > **Status**: Approved
 
 ---
@@ -180,7 +183,7 @@ Config is loaded in this order (later entries win):
 
 ### Deployment Topology
 
-The service is deployed as a single ASP.NET Core process or container beside its seeded `Mocks` content. Callers issue HTTP requests directly to the service, which resolves the response from local packaged JSON data and emits diagnostics to the environment's configured log or telemetry pipeline.
+The service is deployed as a single host beside its seeded `Mocks` content, consistent with the single-service constraint in Layers & Boundaries and [ADR-0001](./adr/ADR-0001-single-minimal-api-service.md). Callers issue HTTP requests directly to that host, which resolves the response from local packaged JSON data and emits diagnostics to the environment's configured log or telemetry pipeline.
 
 ```mermaid
 graph LR
@@ -196,9 +199,9 @@ graph LR
 
 ### CI/CD Pipeline
 
-- **Build**: Restore and build the .NET 10 service plus any test projects in pull requests and continuous integration.
+- **Build**: Restore and build the service plus any test projects in pull requests and continuous integration, following the approved single Minimal API host model in [ADR-0001](./adr/ADR-0001-single-minimal-api-service.md).
 - **Test**: Run unit and endpoint tests against a seeded mock dataset to verify route validation, lookup behavior, and response contract stability.
-- **Deploy**: Publish only to local and cloud development targets using `dotnet run`, container tooling, or dev-host orchestration; no production deployment path is defined for v1.
+- **Deploy**: Publish only to local and cloud development targets using the repo's standard host packaging/orchestration paths, with the environment scope constrained by the no-external-dependency rule and [ADR-0003](./adr/ADR-0003-self-contained-dev-environment-runtime.md); no production deployment path is defined for v1.
 
 ---
 

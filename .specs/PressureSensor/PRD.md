@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 # Product Requirements Document
 
 > **Version**: 1.0<br>

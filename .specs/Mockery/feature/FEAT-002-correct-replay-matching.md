@@ -2,16 +2,16 @@
 
 # FEAT-002: Correct Replay Matching
 
-> **Version**: 2.1<br>
+> **Version**: 2.6<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-20<br>
+> **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Implemented
+> **Status**: Approved
 
 ## Goal
 
-Implement deterministic request fingerprinting so Mockery replays a stored mock only when the incoming request's target and materially relevant shape exactly match the original recorded request. The fingerprint algorithm must live in the Core layer, remain HTTP-agnostic, and produce consistent keys from method, scheme+authority, path, query, configured relevant headers, and normalized body content.
+Implement deterministic request fingerprinting so Mockery replays a stored mock only when the incoming request's target and materially relevant shape exactly match the original recorded request. The fingerprint algorithm must live in the Core layer, remain HTTP-agnostic, and produce consistent keys from method, scheme+authority, path, query, configured relevant headers, and normalized body content. This keeps replay decisions predictable across recorded and manually authored mocks so developers can trust that a hit reflects the same upstream interaction shape.
 
 ## Motivation
 
@@ -212,11 +212,7 @@ The `RequestFingerprintComputer` implementation must:
 
 - ADR-0003: Request target and shape matching — defines the architectural requirement that replays match on request target plus materially relevant request shape, which this feature implements as deterministic fingerprinting.
 - ADR-0009: Core-owned request fingerprint canonicalization — mandates that all normalization rules (method, destination, path, query, relevant headers, body hashing) live in one Core-owned boundary so replay, recording, and manual-mock authoring stay consistent.
-
-## Dependencies
-
 - Implements **ADR-0003**: Request Target and Shape Matching — this feature is the concrete implementation of Mockery's correctness-first replay decision.
 - Requires: Mockery Core namespace (within the proxy project) to host the new types.
 - Requires: .NET 10 SDK with `System.Security.Cryptography` for SHA-256 (in-box, no additional NuGet package).
 - Requires: `Microsoft.Extensions.Options` for `IOptions<MatchingOptions>` binding (already available via ASP.NET Core framework reference).
-

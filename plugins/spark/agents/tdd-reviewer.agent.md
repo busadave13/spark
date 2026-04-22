@@ -36,9 +36,10 @@ In a single parallel call, read:
 
 - All resolved `FEAT-NNN-*.md` feature files — metadata block and Acceptance Criteria
   section only (read-only)
-- All resolved `FEAT-NNN-*.testplan.md` files from `{docs-root}/feature/` — full content
+- All resolved `FEAT-NNN-*.testplan.md` files from `{docs-root}/testplan/` — full content
   (read-only). If a `.testplan.md` is absent for a feature, T16 and T17 are FAIL for
-  that feature.
+  that feature. A `*.testplan.md` file found under `{docs-root}/feature/` is treated as
+  absent for T16 (the legacy location is no longer valid) and additionally raises T22.
 - The project's test directory — scan for test files matching the feature number or name
   (e.g. `*FEAT-NNN*`, `*feat-NNN*`, or filename derived from the feature slug)
 - Test runner config (`jest.config.*`, `vitest.config.*`, `pytest.ini`, etc.) if present —
@@ -83,9 +84,12 @@ feature is FAIL.
 | T13 | Failure mode | Every AC has at least one failure mode test | Any AC has no test describing an error, rejection, or missing-input condition |
 | T14 | Stubs | No stub `NotImplemented` throws remain in implementation files | Any implementation file still contains a `NotImplemented` / `not implemented` throw that would cause tests to fail |
 | T15 | Scope | No untagged tests present | Any `it()`/`test()` call has no AC tag — potential scope creep |
-| T16 | Test plan file | `FEAT-NNN.testplan.md` exists in `{docs-root}/feature/` | No `.testplan.md` file found for this feature |
+| T16 | Test plan file | `FEAT-NNN.testplan.md` exists in `{docs-root}/testplan/` | No `.testplan.md` file found for this feature at `{docs-root}/testplan/FEAT-NNN-*.testplan.md` |
 | T17 | Test plan file | Coverage map in test file matches test plan file | Any test name in the coverage map comment block is absent from the `.testplan.md`, or any test name in the `.testplan.md` is absent from the coverage map |
 | T18 | Test plan file | Testplan status is consistent with feature status | The status combination is not one of the valid pairs: (feature=`Draft`, testplan=`Draft`), (feature=`Approved`, testplan=`Draft`), (feature=`Approved`, testplan=`Approved`), (feature=`Implemented`, testplan=`Approved`), (feature=`Implemented`, testplan=`Implemented`). Any other combination is FAIL. Equivalently: testplan status must be ≤ feature status in the lifecycle order `Draft` < `Approved` < `Implemented`. |
+| T20 | Test plan file | Live test count matches the testplan **Plan baseline** | The `**Plan baseline**: {N} ACs · {N} cases` field in the testplan does not exist, or the live passing-test count differs from the case count in **Plan baseline**. The body's "{N} ACs · {N} test cases total" line and the **Plan baseline** must agree. |
+| T21 | Test plan file | Testplan file is well-formed | The testplan file does not begin with `<!-- SPARK -->`, contains more than one `<!-- SPARK -->` marker, or contains any legacy `<!-- SPECIT -->` marker. (Detects append-instead-of-overwrite corruption.) |
+| T22 | Test plan file | Testplan lives in `{docs-root}/testplan/` not `{docs-root}/feature/` | Any `*.testplan.md` file is found inside `{docs-root}/feature/`. The legacy location is no longer valid; move the file to `{docs-root}/testplan/`. |
 | C01 | Code coverage map | Coverage map header present in implementation files | Any implementation file (non-test, non-stub) for this feature lacks a `// FEAT-NNN: ... AC coverage map:` comment block at the top |
 | C02 | Code coverage map | Every AC in the spec is mapped in at least one implementation file | Any AC ID from the feature spec is absent from all code coverage map headers across all implementation files |
 | C04 | Code coverage map | Coverage map AC set matches test plan file | The set of AC IDs in the implementation coverage map(s) differs from the AC set in the `.testplan.md` (extras or omissions) |
@@ -106,8 +110,8 @@ ranking; it expresses how the finding interacts with the `Implemented` gate.
 
 | Severity | Check IDs | Rationale |
 |----------|-----------|-----------|
-| **BLOCK** | T01, T02, T03, T04, T05, T14, T16, T17, C01, C02, C04 | Suite integrity, coverage-map presence, and traceability between testplan ↔ tests ↔ impl. Without any of these, `Implemented` is meaningless. |
-| **WARN** | T06, T07, T08, T09, T10, T11, T12, T13, T15, T18, C06 | Test quality and housekeeping — matters for long-term health but does not break the spec/code contract. |
+| **BLOCK** | T01, T02, T03, T04, T05, T14, T16, T17, T18, T20, T21, T22, C01, C02, C04 | Suite integrity, coverage-map presence, testplan/feature status consistency, testplan well-formedness and location, and traceability between testplan ↔ tests ↔ impl. Without any of these, `Implemented` is meaningless. |
+| **WARN** | T06, T07, T08, T09, T10, T11, T12, T13, T15, C06 | Test quality and housekeeping — matters for long-term health but does not break the spec/code contract. |
 | **INFO** | (none) | Reserved. |
 
 ---

@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0005: Persist mocks via a human-readable storage abstraction per environment
 

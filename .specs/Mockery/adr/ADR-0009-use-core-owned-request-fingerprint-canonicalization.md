@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0009: Keep request fingerprint canonicalization in Mockery.Core.Matching
 

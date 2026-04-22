@@ -1,4 +1,4 @@
-<!-- SPARK -->
+<!-- SPECIT -->
 
 # ADR-0006: Simplify per-request mock control to a single X-Mockery-Mock header
 

@@ -2,16 +2,16 @@
 
 # FEAT-003: Manual Mock Authoring
 
-> **Version**: 1.8<br>
+> **Version**: 2.1<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2025-07-17<br>
+> **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Implemented
+> **Status**: Approved
 
 ## Goal
 
-Allow developers to create, edit, and delete mock artifacts directly in the mock store so that services can be exercised against hand-authored responses when an upstream dependency is unavailable or not yet built. Manual mocks follow the same schema and matching rules as recorded mocks and are served through the existing replay pipeline without any special-case logic.
+Allow developers to create, edit, and delete mock artifacts directly in the mock store so that services can be exercised against hand-authored responses when an upstream dependency is unavailable or not yet built. This keeps manual mocking fast and inspectable for teams that need to unblock development before a real dependency can participate in the workflow. Manual mocks follow the same schema and matching rules as recorded mocks and are served through the existing replay pipeline without any special-case logic.
 
 ## Motivation
 
@@ -253,7 +253,7 @@ Mock artifacts are stored as individual JSON blobs in the Azure Blob Storage con
     {fingerprint-hash}.json       ← one blob per mock (manual or recorded)
 ```
 
-The connection to Azure Blob Storage is resolved via Aspire service discovery (resource name `mockstorage` — Azurite locally, Azure Storage account in cloud).
+The connection to Azure Blob Storage is configured through standard Azure SDK configuration (Azurite locally, Azure Storage account in cloud).
 
 ## Edge Cases & Error Handling
 
@@ -262,7 +262,7 @@ The connection to Azure Blob Storage is resolved via Aspire service discovery (r
 | Manual mock file is malformed JSON or fails schema validation | Log a warning identifying the file path and validation error. Skip the mock — do not serve it or halt startup. |
 | Two manual mock files on disk have the same computed fingerprint | Load the first file found (alphabetical order by filename). Log a warning identifying both files and the duplicate fingerprint. |
 | Manual mock file is modified on disk while Mockery is running | The next request that evaluates mocks re-reads the artifact from storage. No restart required. |
-| Azure Blob Storage container does not exist at startup | The container is provisioned by Aspire/deployment infrastructure. Blobs are created on write; no manual container creation is required at runtime. If the container or service is unreachable, management API operations return `503 ProblemDetails` with `errorCode = MOCKERY_STORE_UNAVAILABLE` and the failure is logged. |
+| Azure Blob Storage container does not exist at startup | The container is provisioned by deployment infrastructure and created on first write. Blobs are created on write; no manual container creation is required at runtime. If the container or service is unreachable, management API operations return `503 ProblemDetails` with `errorCode = MOCKERY_STORE_UNAVAILABLE` and the failure is logged. |
 | Request body exceeds `Mockery:Matching:MaxBodyBytes` during fingerprint computation for a manual mock | Truncate the body to `MaxBodyBytes` before hashing, consistent with recorded mock behaviour. |
 | API create request is missing the `request` or `response` property | Return `400 ProblemDetails` with error code `MOCKERY_MOCK_INVALID` and a detail message listing the missing fields. |
 | API update changes the `source` field from `Recorded` to `Manual` or vice versa | Reject with `400 ProblemDetails` with error code `MOCKERY_MOCK_INVALID`. The `source` field is immutable after creation. |
@@ -273,7 +273,7 @@ The connection to Azure Blob Storage is resolved via Aspire service discovery (r
 - The existing `IMockStore` interface contract (proxy Core layer) must be preserved. Manual mock management operations are introduced through the new `IManualMockStore` interface (also in the proxy Core layer), which is implemented by `BlobMockStore` (proxy Infrastructure layer) — the sole `IMockStore` implementation.
 - The existing fingerprint computation and matching logic (per ADR-0003) must apply identically to manual and recorded mocks — no separate matching path.
 - The `ManualMockArtifact` schema used by manual mocks shares the same blob path convention (`{Container}/{normalized-host}/{fingerprint-hash}.json`) as recorded mocks so that both types of artifacts coexist in the same storage layout.
-- The existing configuration keys (`Mockery:Storage:ContainerName`, `Mockery:Storage:ReadOnly`) must retain their current semantics. Azure Blob Storage connection is resolved via Aspire service discovery.
+- The existing configuration keys (`Mockery:Storage:ContainerName`, `Mockery:Storage:ReadOnly`) must retain their current semantics. Azure Blob Storage connection is configured through standard Azure SDK configuration.
 
 ## Out of Scope
 
@@ -289,5 +289,4 @@ The connection to Azure Blob Storage is resolved via Aspire service discovery (r
 - **ADR-0007**: Azure Blob Storage Persistence Backend — `BlobMockStore` in the proxy's Infrastructure layer implements both `IMockStore` and `IManualMockStore`.
 - **`IMockStore` interface** (proxy Core layer): Manual mock management extends the existing storage contract without breaking it.
 - **Fingerprint computation component** (proxy Core layer): Computes deterministic request fingerprints for manual mocks using the same algorithm as recorded mocks.
-- **`Mockery:Storage:*` configuration**: Container name (`Mockery:Storage:ContainerName`, default `"mocks"`) and read-only flag govern manual mock persistence. Azure Blob Storage connection is resolved via Aspire service discovery (resource name `mockstorage`).
-
+- **`Mockery:Storage:*` configuration**: Container name (`Mockery:Storage:ContainerName`, default `"mocks"`) and read-only flag govern manual mock persistence. Azure Blob Storage connection is configured through standard Azure SDK configuration.

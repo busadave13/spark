@@ -1,3 +1,4 @@
+<!-- SPARK -->
 # FEAT-004: Region Sensor Discovery API
 
 > **Version**: 1.0<br>
@@ -18,7 +19,7 @@ Callers of the temperature lookup API currently need to know valid sensor IDs in
 ## User Stories
 
 - As a **Service Developer**, I want **to request the list of available sensor IDs for a region** so that **my dependent service can dynamically discover valid sensors instead of hard-coding IDs**.
-- As a **Test Automation Engineer**, I want **a discovery endpoint that returns all seeded sensor IDs for a region** so that **automated tests can enumerate sensors and exercise each one without maintaining a separate inventory**.
+- As a **Integration Test Author**, I want **a discovery endpoint that returns all seeded sensor IDs for a region** so that **automated tests can enumerate sensors and exercise each one without maintaining a separate inventory**.
 
 ## Acceptance Criteria
 

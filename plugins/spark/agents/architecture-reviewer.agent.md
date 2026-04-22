@@ -82,7 +82,7 @@ also fails (a missing field cannot have a valid value).
 | A27 | Any | No implementation detail in non-implementation sections | Technology choice (language, framework, database, cloud provider, auth protocol) appears outside System Overview, Component table, or Config Reference without a documented hard-constraint justification |
 | A28 | Any | No unresolved TBDs | `[TBD]` appears anywhere in the document |
 | A29 | Glossary | At least 1 glossary entry | Glossary table is absent or has zero data rows |
-| A30 | Header | Project Type valid | `**Project Type**` value is not exactly `dotnet-webapi` or `dotnet-blazor` |
+| A30 | Header | Project Type valid | `**Project Type**` value is not exactly `dotnet-webapi` |
 
 ### Severity mapping
 
