@@ -8,6 +8,7 @@
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Approved
+> **Type**: ADR
 
 ---
 

@@ -1,4 +1,4 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 
 # ADR-0001: Keep Mockery as a single ASP.NET Core Minimal API proxy service
 
@@ -8,6 +8,7 @@
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Approved
+> **Type**: ADR
 
 ---
 

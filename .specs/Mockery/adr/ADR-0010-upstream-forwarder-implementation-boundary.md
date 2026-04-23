@@ -1,4 +1,4 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 
 # ADR-0010: UpstreamForwarder Implementation Boundary
 
@@ -8,6 +8,7 @@
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Approved
+> **Type**: ADR
 
 ---
 

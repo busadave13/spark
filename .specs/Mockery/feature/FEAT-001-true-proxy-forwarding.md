@@ -2,12 +2,13 @@
 
 # FEAT-001: True-Proxy Forwarding
 
-> **Version**: 1.24<br>
+> **Version**: 1.25<br>
 > **Created**: 2026-04-14<br>
 > **Last Updated**: 2026-04-22<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Approved
+> **Status**: Approved<br>
+> **Type**: FEATURE
 
 ## Goal
 

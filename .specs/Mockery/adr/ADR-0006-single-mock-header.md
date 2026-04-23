@@ -1,4 +1,4 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 
 # ADR-0006: Simplify per-request mock control to a single X-Mockery-Mock header
 
@@ -8,6 +8,7 @@
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Approved
+> **Type**: ADR
 
 ---
 

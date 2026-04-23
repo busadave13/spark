@@ -4,10 +4,11 @@
 
 > **Version**: 2.6<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-21<br>
+> **Last Updated**: 2026-04-22<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Approved
+> **Status**: Approved<br>
+> **Type**: FEATURE
 
 ## Goal
 

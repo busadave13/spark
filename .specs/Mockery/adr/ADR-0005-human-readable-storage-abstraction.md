@@ -1,4 +1,4 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 
 # ADR-0005: Persist mocks via a human-readable storage abstraction per environment
 
@@ -8,6 +8,7 @@
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Approved
+> **Type**: ADR
 
 ---
 

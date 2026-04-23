@@ -1,4 +1,4 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 
 # ADR-0007: Use Azure Blob Storage as the persistence backend for mock artifacts
 
@@ -8,6 +8,7 @@
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
 > **Status**: Approved
+> **Type**: ADR
 
 ---
 

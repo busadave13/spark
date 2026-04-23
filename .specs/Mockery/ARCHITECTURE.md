@@ -4,12 +4,13 @@
 
 > **Version**: 2.6<br>
 > **Created**: 2026-04-13<br>
-> **Last Updated**: 2026-04-21<br>
+> **Last Updated**: 2026-04-22<br>
 > **Owner**: Dave Harding<br>
 > **Namespace**: Test<br>
 > **Project**: Mockery<br>
 > **Project Type**: dotnet-webapi<br>
-> **Status**: Draft
+> **Status**: Approved
+> **Type**: ARCHITECTURE
 
 ---
 

@@ -7,7 +7,8 @@
 > **Last Updated**: 2026-04-21<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Mockery<br>
-> **Status**: Approved
+> **Status**: Approved<br>
+> **Type**: FEATURE
 
 ## Goal
 

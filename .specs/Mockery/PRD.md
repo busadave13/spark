@@ -2,6 +2,7 @@
 
 # Product Requirements Document
 
+> **Type**: PRD<br>
 > **Version**: 2.7<br>
 > **Created**: 2026-04-01<br>
 > **Last Updated**: 2026-04-20<br>
@@ -224,7 +225,7 @@ Mockery is a development-time HTTP proxy that captures the first real response f
 | Request pipeline | The chain of downstream outbound HTTP calls triggered while handling a single inbound request, where each hop may itself make further outbound calls. |
 | Replay miss | The outcome when an incoming request does not match any stored mock by request target and request shape, triggering either a new recording attempt or an error. |
 | True-proxy forwarding | Routing all standard outbound HTTP traffic through Mockery without requiring a dedicated configuration entry for each upstream, as opposed to proxy setups that require per-upstream registration. |
-| Cloud-hosted development sandbox | A cloud-based isolated development environment — such as a Codespace or Dev Box — where a developer runs services and their dependencies remotely. |
+| Cloud-hosted development sandbox | A cloud-based isolated development environment — such as cloud-hosted development environments — where a developer runs services and their dependencies remotely. |
 | Development profile | A preconfigured local launch or run configuration that defines which services and dependencies start together for a given development scenario. |
 
 ---
