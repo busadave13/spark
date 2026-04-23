@@ -9,7 +9,7 @@
   },
   "plugins": [
     {
-      "name": "spark",
+      "name": "SPARK",
       "description": "Spec-Driven Programming and AI Runtime Kit (SPARK)",
       "version": "1.0.0",
       "source": "./plugins/spark"
