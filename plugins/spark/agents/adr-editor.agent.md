@@ -1,10 +1,8 @@
 ---
 name: adr-editor
 description: "Read/write agent for standalone ADR (Architecture Decision Record) authoring. Reads existing ARCHITECTURE.md and adr/ folder for context, then creates new ADR files and patches the Decision Log table in ARCHITECTURE.md. Use when a user wants to add a single ADR or small set of ADRs to a project that already has ARCHITECTURE.md. Triggers: 'write an ADR', 'create an ADR', 'document this decision', 'add an ADR for X', 'record our decision about Y', 'retroactive ADR'. Always prefer adr-editor over architecture-editor for focused ADR additions — architecture-editor rewrites the whole ARCHITECTURE.md document."
-model: GPT-5.4 (copilot)
 tools: [read, edit, search, web, todo]
 user-invocable: false
-disable-model-invocation: false
 ---
 
 # ADR Editor
@@ -125,9 +123,10 @@ on its own line — nothing before it, nothing else on that line.
 > **Owner**: {resolved-owner}<br>
 > **Project**: {project-name}<br>
 > **Status**: Draft
+> **Type**: ADR<br>
 ```
 
-For retroactive decisions (documenting a historical choice), use `Approved` as status and note
+For retroactive decisions(documenting a historical choice), use `Approved` as status and note
 the approximate original decision date in the Context section.
 
 ### ADR body requirements

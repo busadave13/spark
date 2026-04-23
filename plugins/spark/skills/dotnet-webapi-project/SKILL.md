@@ -1,34 +1,29 @@
 ---
 name: dotnet-webapi-project
-description: Scaffolds a new .NET Web API microservice project with a companion shared class library and unit-test project, aligned to the project AGENTS.md guidelines.
+description: Scaffolds a new .NET Web API microservice with companion .Shared library and .UnitTests project.
 ---
 
 # New .NET Web API Project
 
-This skill scaffolds a new ASP.NET Core Web API microservice plus its companion `.Shared` class library and `.UnitTests` xUnit project. The directory layout is driven by `resources/projectName.instructions.md` after token replacement, so that template stays the single source of truth for the on-disk shape.
-
-The skill performs all work directly — no sub-agent launches, no aligned source-file rewrites, no runtime validation.
-
-## When to Use
-
-- User asks to "create a new project", "add a new service", "scaffold a new API", or "bootstrap a new microservice".
+Scaffolds an ASP.NET Core Web API microservice plus `.Shared` class library and `.UnitTests` xUnit project. Layout is driven by `resources/projectName.instructions.md` after token replacement (single source of truth). Use when the user asks to create, scaffold, or bootstrap a new service.
 
 ## Operating Principles
 
-- **Idempotent.** Never `dotnet new --force`; never overwrite an existing `.cs`, `.csproj`, `.json`, `AGENTS.md`, or `.instructions.md` file. Every write is conditional on the destination being missing.
-- **Templates under `resources/` are the source of truth** for layout, AGENTS guidance, VS Code tasks, and instructions metadata.
-- **Direct filesystem checks are authoritative** — treat command output as supporting context.
-- On any step failure, apply the smallest targeted repair, rerun only the failed step, and stop downstream work until it is healthy.
+- **Idempotent** — never `dotnet new --force`; every write is conditional on the destination being missing.
+- **`resources/` templates are the source of truth** for layout, VS Code tasks, and instructions.
+- **Filesystem checks are authoritative** — command output is supporting context.
+- On failure, apply the smallest repair, rerun only the failed step, and halt downstream work.
 
 ## Required Inputs
 
-Use a single `ask_user` call to collect all three values up front. Do **not** proceed until all three are confirmed:
+Use a single `ask_user` call to collect all missing values up front. Do **not** proceed until all required inputs are confirmed:
 
 | Input | Description | Example |
 |---|---|---|
 | `namespaceName` | Parent folder under `{sourceRoot}/` (PascalCase) | `Test`, `XPackage` |
 | `projectName`   | Service project name (PascalCase) | `Mockery`, `WeatherCore` |
 | `sourceRoot`    | Repo-relative path to the source folder | `src` |
+| `instructionsRoot` | Absolute path where the instructions file should be written. **Caller passes this**, derived from Spark's `config.yaml` `roots.instructions`. Falls back to `$repoRoot\.github\instructions` only if the caller did not supply it. | `C:\repo\.github\instructions` or `C:\repo\.copilot\instructions` |
 
 Derived values:
 
@@ -41,7 +36,7 @@ Derived values:
 
 Replace every `{token}` with its concrete value before running the equivalent command.
 
-> **Cross-platform note:** PowerShell shown below; on macOS/Linux use Bash/Python or any equivalent. Path separators (`\` vs `/`) and command syntax differ — adapt as needed.
+> PowerShell shown below; adapt syntax and path separators for macOS/Linux.
 
 ```powershell
 $repoRoot               = git rev-parse --show-toplevel  # or the agent's known repo root
@@ -53,25 +48,21 @@ $sharedProjectDir       = "$serviceGroup\{projectName}.Shared"
 $sharedPath             = "$sharedProjectDir\{projectName}.Shared.csproj"
 $unitTestsDir           = "$serviceGroup\{projectName}.UnitTests"
 $unitTestsPath          = "$unitTestsDir\{projectName}.UnitTests.csproj"
-$agentsPath             = "$serviceGroup\AGENTS.md"
 $vscodeDir              = "$namespaceRoot\.vscode"
 $vscodeTasksPath        = "$vscodeDir\tasks.json"
 $workspacePath          = "$namespaceRoot\{namespaceNameLower}.code-workspace"
-$instructionsDir        = "$repoRoot\.github\instructions"
+$instructionsDir        = if ($instructionsRoot) { $instructionsRoot } else { "$repoRoot\.github\instructions" }
 $instructionsPath       = "$instructionsDir\{projectNameLower}.instructions.md"
 
 $resourcesDir           = (path to this skill's resources directory)
 $folderTemplate         = "$resourcesDir\projectName.instructions.md"
-$agentsTemplate         = "$resourcesDir\AGENTS.md"
 $tasksTemplate          = "$resourcesDir\tasks.json"
 $workspaceTemplate      = "$resourcesDir\namespaceName.code-workspace"
 ```
 
 ## Step 2: Create Directory Structure From Template
 
-The folder list comes from `resources/projectName.instructions.md`. Read that file, replace the three tokens (`{sourceRoot}`, `{namespaceName}`, `{projectName}`) with the input values, and extract the bullet entries under the `### Folder Structure` heading. For each entry that ends with `/`, create the directory if missing. File entries are produced by later steps and are not pre-created here.
-
-Always also ensure `$vscodeDir` and `$instructionsDir` exist (they are not in the template's bullet list because they are managed by Steps 4 and 6).
+Read `resources/projectName.instructions.md`, replace tokens (`{sourceRoot}`, `{namespaceName}`, `{projectName}`), and extract bullet entries under `### Folder Structure`. Create each directory-ending entry (`/`) if missing. Also ensure `$vscodeDir` and `$instructionsDir` exist.
 
 ## Step 3: Scaffold the Three Projects
 
@@ -104,72 +95,36 @@ This skill does **not** rewrite `Program.cs`, does **not** add aligned WeatherFo
 
 ## Step 4: Copy + Token-Replace + Merge `tasks.json`
 
-`tasks.json` lives at the namespace root (`$vscodeDir = $namespaceRoot\.vscode`) and
-is shared across every project scaffolded under the same namespace. Each skill run
-must contribute its project's tasks without clobbering tasks added by previous runs.
+`tasks.json` lives at `$vscodeDir` (namespace root) and is shared across all projects in the namespace.
 
-Render the template first:
+1. Read `$tasksTemplate` and replace `{projectName}` to produce the **rendered template**.
+2. **If `$vscodeTasksPath` is missing** — write the rendered template verbatim.
+3. **If `$vscodeTasksPath` exists** — JSON-aware merge:
+   - Parse existing file. If malformed, surface a blocker — do **not** overwrite.
+   - Collect existing task labels from `existing.tasks[*].label`.
+   - Append any rendered tasks whose `label` is not already present.
+   - Write back only if tasks were appended; preserve existing top-level fields and order.
 
-1. Read `$tasksTemplate`.
-2. Replace `{projectName}` with the input value to produce the **rendered template**
-   (a JSON document with a top-level `tasks` array).
+The merge is label-based and order-preserving. The skill never modifies or removes existing tasks.
 
-Then write or merge:
+## Step 5: Copy + Rename Namespace Workspace File
 
-- **If `$vscodeTasksPath` is missing**, write the rendered template to
-  `$vscodeTasksPath` verbatim.
-- **If `$vscodeTasksPath` already exists**, perform a JSON-aware merge:
-  1. Parse the existing file as JSON. If parsing fails, surface a blocker — do **not**
-     overwrite or wrap a malformed file.
-  2. Build the set of existing task labels from `existing.tasks[*].label`.
-  3. For each task in the rendered template's `tasks` array whose `label` is not in
-     that set, append it to `existing.tasks`.
-  4. If at least one task was appended, write the updated JSON back to
-     `$vscodeTasksPath`, preserving the existing file's other top-level fields
-     (e.g. `version`, `inputs`) and overall structure. If nothing was appended, leave
-     the file untouched (re-running the skill for the same project must be a no-op).
+The namespace root gets a single VS Code workspace file named in lowercase (e.g. `Test` → `test.code-workspace`). It is namespace-scoped — a second project under the same namespace skips this step.
 
-The merge is label-based and order-preserving: appended tasks go at the end of the
-existing `tasks` array. The skill never modifies or removes tasks that are already
-present, even if their bodies differ from the rendered template.
+If `$workspacePath` is missing, copy `$workspaceTemplate` verbatim (no token replacement). If present, leave unchanged.
 
-## Step 5: Copy `AGENTS.md`
+## Step 6: Copy + Token-Replace Instructions File
 
-If `$agentsPath` is missing, copy `$agentsTemplate` to `$agentsPath` unchanged. If present, leave it untouched (the existing file is the source of truth).
+If `$instructionsPath` is missing, read `$folderTemplate`, replace `{sourceRoot}`, `{namespaceName}`, and `{projectName}`, and write to `$instructionsPath`. If present, leave unchanged.
 
-## Step 6: Copy + Rename Namespace Workspace File
+## Step 7: Direct Verification
 
-The namespace folder gets a single VS Code multi-root workspace file at the namespace
-root, named after the namespace in lowercase (e.g. namespace `Test` →
-`test.code-workspace`). It is namespace-scoped, not project-scoped: the second project
-scaffolded under the same namespace will find this file already in place and skip the
-copy.
-
-If `$workspacePath` is missing, copy `$workspaceTemplate`
-(`resources/namespaceName.code-workspace`) to `$workspacePath` verbatim. The template
-contains no tokens — do **not** perform token replacement.
-
-If `$workspacePath` already exists, leave it unchanged.
-
-## Step 7: Copy + Rename + Token-Replace Instructions File
-
-If `$instructionsPath` is missing:
-
-1. Read `$folderTemplate` (`resources/projectName.instructions.md`).
-2. Replace every occurrence of `{sourceRoot}`, `{namespaceName}`, and `{projectName}` with the input values.
-3. Write the result to `$instructionsPath` (i.e. `<repoRoot>/.github/instructions/{projectNameLower}.instructions.md`).
-
-If the destination already exists, leave it unchanged.
-
-## Step 8: Direct Verification
-
-Run only these checks (all must be true):
+All must be true. If any fails, rerun the owning step and recheck. Do not advance until all pass or a blocker is surfaced.
 
 ```powershell
 Test-Path $servicePath
 Test-Path $sharedPath
 Test-Path $unitTestsPath
-Test-Path $agentsPath
 Test-Path $vscodeTasksPath
 Test-Path $workspacePath
 Test-Path $instructionsPath
@@ -179,9 +134,9 @@ Select-String -Path $unitTestsPath -Pattern "ProjectReference Include=.*[/\\]{pr
 Select-String -Path $unitTestsPath -Pattern ([regex]::Escape("Microsoft.AspNetCore.Mvc.Testing"))                                    -Quiet
 ```
 
-If any check fails, rerun only the owning step and rerun the failed check. Do **not** advance to the report until either all checks pass or a blocker is explicitly surfaced.
+If any check fails, rerun only the owning step and recheck.
 
-## Step 9: Report
+## Step 8: Report
 
 ```
 **Project scaffolded successfully!**
@@ -194,10 +149,9 @@ If any check fails, rerun only the owning step and rerun the failed check. Do **
 | Service → Shared reference   | — | [added / already existed] |
 | UnitTests → Service reference| — | [added / already existed] |
 | Mvc.Testing package          | — | [added (v{mvcTestingVersion}) / already existed] |
-| AGENTS.md       | `{sourceRoot}\{namespaceName}\{projectName}\AGENTS.md`                | [created / already existed] |
 | VS Code tasks   | `{sourceRoot}\{namespaceName}\.vscode\tasks.json`                     | [created / merged / already up to date] |
 | VS Code workspace | `{sourceRoot}\{namespaceName}\{namespaceNameLower}.code-workspace`  | [created / already existed] |
-| Instructions    | `.github\instructions\{projectNameLower}.instructions.md`             | [created / already existed] |
+| Instructions    | `{instructionsDir}\{projectNameLower}.instructions.md` (resolved from caller's `instructionsRoot` or default `.github\instructions`) | [created / already existed] |
 ```
 
 ## Error Handling

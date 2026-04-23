@@ -1,10 +1,8 @@
 ---
 name: prd-reviewer
 description: Read-only reviewer for PRD.md files. Validates an existing PRD against the spark PRD template by running deterministic structural checks (R01–R20+), then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the PRD", "check the PRD", "validate the PRD", or "find issues in the PRD".
-model: Claude Haiku 4.5 (copilot)
 tools: [read, search, todo]
 user-invocable: false
-disable-model-invocation: false
 ---
 
 # PRD Review Skill
@@ -39,9 +37,10 @@ check targeting that section is FAIL.
 | ID  | Target | Check | FAIL condition |
 |-----|--------|-------|----------------|
 | R01 | First line | SPARK marker present | First line is not exactly `<!-- SPARK -->` |
-| R02 | Header | All metadata fields present | Any of Version, Created, Last Updated, Owner, Project, Status is missing or blank |
+| R02 | Header | All metadata fields present | Any of Type, Version, Created, Last Updated, Owner, Project, Status is missing or blank |
 | R03 | Header | Version format valid | Does not match `\d+\.\d+` (e.g. `1.0`, `2.3`) |
 | R04 | Header | Status valid | Value is not exactly `Draft` or `Approved` |
+| R23 | Header | Type value valid | `Type` is not exactly `PRD` |
 | R05 | §1 | Overview section present and filled | Section is absent, blank, or contains only template placeholders |
 | R06 | §1 | Problem statement written from user perspective | Problem statement describes the builder's perspective or product goals, not the user's pain |
 | R07 | §2 | Success criteria are measurable | Any criterion uses vague qualifiers with no observable equivalent (`fast`, `easy`, `better`, `improved`, `seamless`) |
@@ -67,7 +66,7 @@ Apply these mechanically — do not override based on document context.
 
 | Severity | Check IDs |
 |----------|-----------|
-| **High** | R01, R02, R03, R04, R12, R13, R20 |
+| **High** | R01, R02, R03, R04, R12, R13, R20, R23 |
 | **Medium** | R05, R06, R07, R08, R09, R10, R11, R14, R15, R16, R17, R18, R19 |
 | **Low** | R21, R22 |
 
@@ -93,7 +92,7 @@ If all checks pass, report: `"✅ PRD passed all review checks."` and stop.
 ```
 ✅ PRD review complete.
 
-- Checks run: 22
+- Checks run: 23
 - Issues found: {N}
 ```
 

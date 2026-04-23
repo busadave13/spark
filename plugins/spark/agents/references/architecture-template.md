@@ -10,6 +10,7 @@
 > **Project**: {PROJECT_NAME}<br>
 > **Project Type**: {PROJECT_TYPE}<br>
 > **Status**: Draft
+> **Type**: ARCHITECTURE<br>
 
 ---
 

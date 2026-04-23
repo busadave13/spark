@@ -8,6 +8,7 @@
 > **Owner**: {OWNER}<br>
 > **Project**: {PROJECT_NAME}<br>
 > **Status**: Draft
+> **Type**: PRD<br>
 
 ---
 

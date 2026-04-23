@@ -17,6 +17,7 @@
 > **Plan baseline**: {N} ACs · {N} cases<br>
 > **Approved**: {YYYY-MM-DD}<br>
 > **Status**: Draft
+> **Type**: TESTPLAN<br>
 
 ## Test plan — FEAT-{NNN}: {feature name}
 

@@ -1,10 +1,8 @@
 ---
 name: feature-editor
 description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Accepts a project folder, PRD.md, ARCHITECTURE.md, or existing FEAT-NNN-*.md path. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses references/feature-template.md and references/feature-section-guide.md as the authoritative output contract."
-model: GPT-5.4 (copilot)
 tools: [read, edit, search, web, todo]
 user-invocable: false
-disable-model-invocation: false
 ---
 
 # Feature Spec Agent
@@ -168,11 +166,12 @@ During codebase exploration, compare the feature spec's acceptance criteria, API
 5. The feature's current `Status` is not already `Implemented`.
 
 If all conditions are met, surface this finding in the report at Step 8: tell the user
-the codebase already implements every AC and recommend running `/spark-status implement`
+the codebase already implements every AC and recommend running `spark-status implement`
+(via `runSubagent`)
 on the feature spec (or, if the user wants the full TDD audit trail, running
-`tdd-developer` against the existing implementation). `feature-editor` itself does **not**
-write `Status: Implemented` — that transition is owned by `tdd-developer` (after its
-`tdd-reviewer` gate passes) and by the `/spark-status implement` skill.
+the resolved TDD agent against the existing implementation). `feature-editor` itself does **not**
+write `Status: Implemented` — that transition is owned by the resolved TDD agent (after its
+`tdd-reviewer` gate passes) and by the `spark-status implement` subagent.
 
 If **any** spec content needs updating to match the codebase (type names, signatures, missing fields, etc.), the feature is **not** fully implemented from a spec perspective — fix the spec first, and the status remains `Draft` until the next review pass.
 
@@ -289,6 +288,7 @@ on the first line — nothing before it, nothing else on that line. The document
 > **Owner**: {resolved-owner}<br>
 > **Project**: {project-name}<br>
 > **Status**: Draft
+> **Type**: FEATURE<br>
 ```
 
 #### Create mode
@@ -305,7 +305,7 @@ on the first line — nothing before it, nothing else on that line. The document
 - Preserve `Created`.
 - Preserve `Owner` unless it is missing and must be backfilled.
 - Do not touch `Version` or `Last Updated` here — Step 7 bumps the version once as the final action.
-- Valid statuses are `Draft`, `Approved`, `Implemented`; only the user may set `Approved`. `Implemented` may be set by `tdd-developer` or by this agent when codebase exploration confirms the feature is fully implemented (see Step 3 — Assess implementation completeness).
+- Valid statuses are `Draft`, `Approved`, `Implemented`; only the user may set `Approved`. `Implemented` may be set by the resolved TDD agent or by this agent when codebase exploration confirms the feature is fully implemented (see Step 3 — Assess implementation completeness).
 
 ### Section requirements
 
@@ -323,7 +323,12 @@ If the user requests multiple features:
 - assign sequential FEAT numbers starting from the next available number
 - reuse the same compact context packet
 - ask only the delta questions needed per feature
-- write each file completely before moving to the next one
+- **write the files in parallel.** After the interview is complete the features are
+  independent — issue all the write operations in a single parallel tool call rather
+  than serializing them. Each file must still be complete on disk; parallelism applies
+  to the write round-trip only. If two features happen to target the same path (e.g.
+  an Update collided with a Create on the same FEAT-NNN), halt and surface the
+  collision instead of racing.
 
 ## Step 7: Finalise
 
@@ -346,8 +351,8 @@ This is the **only** place the version is bumped. One bump, once, at the very en
 - **Updated** in this pass (any change at all, for any reason) → increment the minor digit by 1. After `X.9`, roll to `(X+1).0` (e.g. `1.0` → `1.1`, `1.9` → `2.0`). Set `**Last Updated**` to today. Set `**Status**` to `Draft`.
 - **Not changed** → do not bump.
 
-> Status transitions to `Implemented` are owned by `tdd-developer` (after its
-> `tdd-reviewer` gate passes) or by the `/spark-status implement` skill. `feature-editor`
+> Status transitions to `Implemented` are owned by the resolved TDD agent (after its
+> `tdd-reviewer` gate passes) or by the `spark-status implement` subagent. `feature-editor`
 > does not write `Status: Implemented` itself.
 
 If multiple features were updated in the same pass, bump each independently.
@@ -367,4 +372,4 @@ For an updated feature:
 
 Always include any blockers or upstream conflicts that still need user action.
 
-After feature specs are approved, suggest using `tdd-developer` to implement the feature.
+After feature specs are approved, suggest using the resolved TDD agent to implement the feature.

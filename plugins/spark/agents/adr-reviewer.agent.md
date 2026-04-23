@@ -1,10 +1,8 @@
 ---
 name: adr-reviewer
 description: Read-only reviewer for ADR files. Looks for ADRs in projects within a .specs/ folder (anywhere in the repo). Validates each ADR against the spark ADR template by running deterministic structural checks (D01–D11) per file, then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the ADRs", "check an ADR", "validate ADR-0001", or "find issues in the decision records".
-model: Claude Haiku 4.5 (copilot)
 tools: [read, search, todo]
 user-invocable: false
-disable-model-invocation: false
 ---
 
 # ADR Reviewer
@@ -45,7 +43,7 @@ targeting that section is FAIL for that file.
 | ID  | Target | Check | FAIL condition |
 |-----|--------|-------|----------------|
 | D01 | First line | SPARK marker present | First line is not exactly `<!-- SPARK -->` |
-| D02 | Header | All metadata fields present | Any of Version, Created, Last Updated, Owner, Project, Status is missing or blank |
+| D02 | Header | All metadata fields present | Any of Type, Version, Created, Last Updated, Owner, Project, Status is missing or blank |
 | D03 | Header | Version format valid | Does not match `\d+\.\d+` (e.g. `1.0`, `2.3`) — three-part versions like `1.0.0` are non-conforming |
 | D04 | Header | Status valid | Value is not exactly `Draft` or `Approved` |
 | D05 | Context | Context section has >= 3 sentences | Fewer than 3 sentences present in the Context section |
@@ -55,6 +53,7 @@ targeting that section is FAIL for that file.
 | D09 | Consequences | At least 2 positive consequences | Fewer than 2 positive consequences listed |
 | D10 | Consequences | At least 2 accepted tradeoffs | Fewer than 2 accepted tradeoffs listed |
 | D11 | ARCHITECTURE.md Decision Log | ADR appears in Decision Log in ARCHITECTURE.md | ADR filename has no corresponding row in the Decision Log section of `ARCHITECTURE.md` |
+| D12 | Header | Type value valid | `**Type**` value is not exactly `ADR` |
 
 ### Severity mapping
 
@@ -62,7 +61,7 @@ Apply these mechanically — do not override based on document context.
 
 | Severity | Check IDs |
 |----------|-----------|
-| **High** | D01, D02, D03, D06, D11 |
+| **High** | D01, D02, D03, D06, D11, D12 |
 | **Medium** | D04, D05, D07, D08, D09, D10 |
 | **Low** | — |
 
@@ -92,7 +91,7 @@ If all checks pass across all reviewed ADRs, report:
 ✅ ADR review complete.
 
 - ADRs reviewed: {N}
-- Checks run per ADR: 11
+- Checks run per ADR: 12
 - Issues found: {N}
 ```
 

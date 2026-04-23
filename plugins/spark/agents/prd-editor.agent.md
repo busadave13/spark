@@ -1,10 +1,8 @@
 ---
 name: prd-editor
 description: "Read/write agent that creates or updates PRD.md — the foundational product requirements document for a Spark project. Reads existing PRD.md and project context, then writes or updates {docs-root}/PRD.md. Projects live in .specs/ folders anywhere in the repo. Accepts a project name, .specs/ path, or existing PRD.md path."
-model: GPT-5.4 (copilot)
 tools: [read, edit, search, web, todo]
 user-invocable: false
-disable-model-invocation: false
 ---
 
 # PRD Author
@@ -44,7 +42,7 @@ If the user asks to review the PRD, skip the interview (Step 2), skip generation
 
 1. Run `git rev-parse --show-toplevel` → capture `{repo-root}`.
    - If the command fails (e.g. not inside a git repository), ask the user: "What is the root path of your repository?"
-2. Check for `{repo-root}/.github/spark.md`. If it exists, read it as optional project-level context. If it does not exist, continue.
+2. Check for `{agents-root}/../spark.md` (sibling of the agents folder — resolves to `.github/spark.md` under a default install, `.copilot/spark.md` under an alternate install). If it exists, read it as optional project-level context. If it does not exist, continue.
 
 ### Resolve Owner
 
@@ -79,11 +77,21 @@ questions into a single user prompt.
 
 ---
 
-## Step 3: Generate or update PRD
+## Step 3.0: Load reference files (required — abort on miss)
 
-Read these reference files (located in `references/` next to this agent file) in a single parallel call. Read them directly — **do NOT use subagents** to load or interpret them:
+Before generating or reviewing, load the two references below in a single parallel call. Read them directly — **do NOT use subagents**. Paths are relative to this agent file (`{agents-root}/references/`); they resolve correctly regardless of whether the agents live in `.github/agents/` or `.copilot/agents/`.
+
 - `references/prd-template.md` — the authoritative template; follow its structure exactly
 - `references/prd-section-guide.md` — detailed guidance for each section; consult for quality and anti-patterns
+
+If either file is missing, stop and surface:
+> "⛔ PRD references missing at `{agents-root}/references/`. Check the Spark install."
+
+Do not proceed to Step 3 or Step 3a without both references loaded.
+
+## Step 3: Generate or update PRD
+
+The references required for this step are loaded by Step 3.0. Re-use them from context — do not re-read here.
 
 If `{docs-root}/PRD.md` already exists, this is an update pass. Use a discovery-first read strategy:
 
@@ -155,6 +163,7 @@ The document header must open with:
 > **Owner**: [from project context Owner field]<br>
 > **Project**: [from project context Project name field]<br>
 > **Status**: [status — see Status rules below]
+> **Type**: PRD<br>
 ```
 
 ### Version rules
@@ -195,9 +204,7 @@ Before finishing, verify:
 
 This step runs only when the user explicitly asks to review the PRD. It validates the existing `PRD.md` against the template and section guide without rewriting it.
 
-Read these reference files (located in `references/` next to this agent file) in a single parallel call. Read them directly — **do NOT use subagents**:
-- `references/prd-template.md`
-- `references/prd-section-guide.md`
+The references required for this step are loaded by Step 3.0. Re-use them from context — do not re-read here.
 
 Read `{docs-root}/PRD.md` in full.
 
@@ -209,7 +216,7 @@ Compare the PRD against the template and section guide. Check for:
 
 1. **Missing sections** — every numbered section (1–12) and the header block must be present.
 2. **Empty or placeholder sections** — sections that contain only template placeholders (`{...}`) or are blank.
-3. **Header completeness** — all metadata fields (Version, Created, Last Updated, Owner, Project, Status) are present and have valid values.
+3. **Header completeness** — all metadata fields (Type, Version, Created, Last Updated, Owner, Project, Status) are present and have valid values.
 4. **Version / status validity** — Version follows `major.minor` format; Status is `Draft` or `Approved`.
 5. **Scope gaps** — Out of scope has fewer than 3 items, or in-scope capabilities lack matching features in §5.
 6. **Feature ↔ requirement mapping** — every core feature in §5 should have at least one functional requirement in §6.

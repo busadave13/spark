@@ -1,7 +1,6 @@
 ---
 name: architecture-editor
 description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Projects are organized within .specs/ folders anywhere in the repo. Accepts a project name, .specs/ path, or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
-model: GPT-5.4 (copilot)
 tools: [read, edit, search, web, todo, agent]
 user-invocable: false
 disable-model-invocation: false
@@ -89,7 +88,7 @@ Determine `{resolved-project-type}` — required; the only allowed value is `dot
    > "What is the project type? Allowed value: `dotnet-webapi`."
    Re-ask until the response matches exactly the allowed value.
 
-This field is read by downstream agents (e.g., tdd-developer) to choose the correct
+This field is read by downstream agents (e.g., the resolved TDD agent) to choose the correct
 project-initialization skill. Do not infer it from Tech Stack content — it must be set explicitly.
 
 ## Step 4: Architecture flow
@@ -144,11 +143,13 @@ The architecture must reflect the actual codebase. Before interviewing the user,
 
 Use sub-agents for parallel codebase exploration when the project contains 10+ services, multiple languages, or more than 500 source files. For smaller projects, explore directly. Summarize findings concisely — the goal is to inform the architecture document, not to reproduce the code.
 
+**Overlap with the interview.** Kick off the codebase scan (sub-agent or background tool call) *before* asking the interview questions the user does not need code context to answer — items 0 and 3–5 in Step 4.4. The user answers while the scan runs. Block on the scan only when presenting the codebase summary or asking questions 1 and 2 (which depend on it).
+
 ### Step 4.4: Interview the user
 
 Extract everything you can from the PRD, existing architecture, and the codebase review first. Ask only what remains unclear or cannot be determined from code.
 
-Present a brief summary of what the codebase review revealed (components found, tech stack, key patterns) so the user can confirm or correct your understanding before drafting.
+Present a brief summary of what the codebase review revealed (components found, tech stack, key patterns) so the user can confirm or correct your understanding before drafting. If the scan from Step 4.3 is still running, ask the non-code-dependent questions first while it completes.
 
 Typical architecture questions (skip any already answered by the codebase):
 
@@ -191,6 +192,7 @@ on the first line — nothing before it, nothing else on that line. The document
 > **Project**: [project name]<br>
 > **Project Type**: {resolved-project-type}<br>
 > **Status**: Draft
+> **Type**: ARCHITECTURE<br>
 ```
 
 #### Version rules
@@ -281,9 +283,19 @@ Instructions:
 
 After all sub-agents complete, proceed to Step 6 to write the ADR index.
 
+### Join semantics
+
+Step 6 (ARCHITECTURE.md patch + Decision Log update + version bump) must not start
+until **every** parallel sub-agent in Step 5.1 has returned. Concretely: issue all
+`adr-editor` sub-agent calls in a single parallel batch, await the full batch, and
+only then begin Step 6. Do not stream partial results into the Decision Log — that
+race produces interleaved writes to `ARCHITECTURE.md`. If one sub-agent fails, halt
+the whole Step 6 pass, surface the failure, and do not bump the architecture version
+until the failed ADR is re-run successfully.
+
 ## Step 6: Finalise
 
-All content changes (content updates, ADR writing, and index regeneration) must be complete before this step runs.
+All content changes (content updates, ADR writing, and index regeneration) must be complete before this step runs. In particular, all parallel ADR sub-agents from Step 5.1 must have returned (see *Join semantics* above).
 
 ### Resolve TBDs
 

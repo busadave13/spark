@@ -1,10 +1,8 @@
 ---
 name: feature-reviewer
 description: Read-only reviewer for feature spec files. Validates FEAT-NNN-*.md files under the feature/ directory against the spark feature template by running deterministic structural checks (F01–F12+) per file, then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the feature specs", "check FEAT-001", "validate feature docs", or "find issues in the feature specs".
-model: Claude Haiku 4.5 (copilot)
 tools: [read, search, todo]
 user-invocable: false
-disable-model-invocation: false
 ---
 
 # Feature Review
@@ -47,7 +45,7 @@ targeting that section is FAIL for that file.
 | ID  | Target | Check | FAIL condition |
 |-----|--------|-------|----------------|
 | F01 | First line | SPARK marker present | First line is not exactly `<!-- SPARK -->` |
-| F02 | Header | All metadata fields present | Any of Version, Created, Last Updated, Owner, Project, Status is missing or blank |
+| F02 | Header | All metadata fields present | Any of Type, Version, Created, Last Updated, Owner, Project, Status is missing or blank |
 | F03 | Header | Version format valid | Does not match `\d+\.\d+` (e.g. `1.0`, `2.3`) — three-part versions are non-conforming |
 | F04 | Header | Status valid | Value is not exactly `Draft`, `Approved`, or `Implemented` |
 | F05 | Goal | Goal section present and filled | Section is absent, blank, or contains only template placeholders |
@@ -68,6 +66,7 @@ targeting that section is FAIL for that file.
 | F20 | Any | No Open Questions section | A section named "Open Questions" (or similar) exists anywhere in the document |
 | F21 | Any | No unresolved TBDs or placeholders | `[TBD]`, `{PLACEHOLDER}`, or unfilled template placeholder text (e.g. `{FEATURE_NAME}`) appears anywhere |
 | F22 | Any | No upstream conflict | Feature introduces a goal, persona, or architectural decision not present in `PRD.md` or `ARCHITECTURE.md` |
+| F23 | Header | Type value valid | `**Type**` value is not exactly `FEATURE` |
 
 ### Severity mapping
 
@@ -75,7 +74,7 @@ Apply these mechanically — do not override based on document context.
 
 | Severity | Check IDs |
 |----------|-----------|
-| **High** | F01, F02, F03, F04, F11, F20, F22 |
+| **High** | F01, F02, F03, F04, F11, F20, F22, F23 |
 | **Medium** | F05, F06, F07, F08, F09, F10, F12, F13, F14, F15, F16, F17, F18, F19 |
 | **Low** | F21 |
 
@@ -105,7 +104,7 @@ If all checks pass across all reviewed feature files, report:
 ✅ Feature review complete.
 
 - Feature specs reviewed: {N}
-- Checks run per spec: 22
+- Checks run per spec: 23
 - Issues found: {N}
 ```
 

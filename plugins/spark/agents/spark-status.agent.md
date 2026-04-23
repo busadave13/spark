@@ -1,28 +1,36 @@
 ---
 name: spark-status
-description: "Transition the Status field of a Spark artifact atomically (Draft ↔ Approved, Approved → Implemented for features and test plans). Validates the upstream prerequisite chain, bumps the version per the rule in spark.instructions.md, and updates Last Updated (or the testplan date fields). Use when the user asks to approve, revert, or mark implemented a PRD, ARCHITECTURE, ADR, feature spec, or test plan — e.g. 'approve the Mockery PRD', 'revert ARCHITECTURE to Draft', 'mark FEAT-001 implemented', or when the user invokes `/spark-status`. Also supports a read-only `status` subcommand that prints current status plus the prerequisite chain."
+description: "Transition the Status field of a Spark artifact atomically (Draft ↔ Approved, Approved → Implemented for features and test plans). Validates the upstream prerequisite chain, bumps the version per the rule in spark.agent.md, and updates Last Updated (or the testplan date fields). Use when the user asks to approve, revert, or mark implemented a PRD, ARCHITECTURE, ADR, feature spec, or test plan — e.g. 'approve the Mockery PRD', 'revert ARCHITECTURE to Draft', 'mark FEAT-001 implemented', or when the user invokes `/spark-status`. Also supports a read-only `status` subcommand that prints current status plus the prerequisite chain."
+tools: [read, edit, search]
+user-invocable: false
 ---
+
+# spark-status — Artifact Status Transition Agent
+
+Transitions the `**Status**` field of a Spark artifact atomically. Validates the upstream
+prerequisite chain, bumps the version, and updates dates. Returns a one-line confirmation
+or rejection message.
 
 ## Scope
 
-This skill only rewrites the metadata header of an existing Spark artifact. It does not:
+This agent only rewrites the metadata header of an existing Spark artifact. It does not:
 
 - Edit artifact body content.
 - Invoke editor, reviewer, or TDD agents.
 - Operate on multiple artifacts in one call (bulk transitions are not supported — invoke once per artifact).
 
-The decision to approve remains a human judgment. This skill enforces the mechanical
+The decision to approve remains a human judgment. This agent enforces the mechanical
 rules: prerequisite chain, version bump, date update, and status value.
 
 ## Required inputs
 
-Parse two values from the user's request:
+Parse two values from the prompt:
 
 - **subcommand** — one of `approve`, `revert`, `implement`, `status`.
 - **path** — path to the target artifact (relative or absolute).
 
-If either is missing or ambiguous, ask the user before proceeding. Do not guess which
-artifact they mean — if the user says "approve the PRD" without a project, ask which
+If either is missing or ambiguous, ask the caller before proceeding. Do not guess which
+artifact they mean — if the caller says "approve the PRD" without a project, ask which
 project.
 
 ## Step 1 — Classify the artifact
@@ -101,10 +109,10 @@ Reject if:
 - Current `**Status**` ≠ `Approved`.
 - The implement-side prerequisites (Step 4) fail.
 
-Note: the normal path for marking a feature `Implemented` is `tdd-developer`. Use
+Note: the normal path for marking a feature `Implemented` is the resolved TDD agent. Use
 `implement` here for manual cleanup, repair, or when the user is re-asserting an already-
 shipped feature's status. If a mandatory `tdd-reviewer` gate has been wired into the
-workflow and records a machine-readable pass/fail anywhere the skill can read, require
+workflow and records a machine-readable pass/fail anywhere the agent can read, require
 that result to be clean. Otherwise the reviewer check is a no-op — do not block.
 
 Apply the transition (Step 5).
@@ -193,5 +201,5 @@ For `status`, print the current state plus the prerequisite chain:
 
 Manual editing of the metadata block is still valid. If the user explicitly prefers to
 edit the file by hand, do not block them — remind them to bump `**Version**` and update
-`**Last Updated**` per the rules in `plugins/spark/instructions/spark.instructions.md`
-(see also the version-bump rule in Step 5 of this skill).
+`**Last Updated**` per the rules in spark.agent.md (see also the version-bump
+rule in Step 5 of this agent).

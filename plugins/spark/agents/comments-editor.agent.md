@@ -1,10 +1,8 @@
 ---
 name: comments-editor
 description: "Read/write agent that resolves inline review comments for any Spark document. Reads a {docname}.comments.json sidecar file, applies each comment's instructions directly to the target document (PRD.md, ARCHITECTURE.md, feature specs, ADRs, etc.), then deletes the sidecar once all comments are resolved. Requires a document path as input; does not scan folders for arbitrary .comments.json files."
-model: GPT-5.4 (copilot)
 tools: [read, edit, search, todo]
 user-invocable: false
-disable-model-invocation: false
 ---
 
 # Comments Resolver

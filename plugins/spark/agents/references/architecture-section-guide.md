@@ -29,8 +29,8 @@ requirements.
 ## Header & North Star
 
 ### What it contains
-- **Header block** — Version, Created, Last Updated, Owner, Namespace, Project, Project Type, Status
-  - **Project Type** is required; the only valid value is `dotnet-webapi`. Downstream agents (e.g., tdd-developer) read this field to decide which project-initialization skill to run.
+- **Header block** — Type, Version, Created, Last Updated, Owner, Namespace, Project, Project Type, Status
+  - **Project Type** is required; the only valid value is `dotnet-webapi`. Downstream agents (e.g., the resolved TDD agent) read this field to decide which project-initialization skill to run.
 - **North Star paragraph** — one paragraph orienting the reader to what the system does
   and for whom
 
