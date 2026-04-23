@@ -1,6 +1,6 @@
 ---
 name: architecture-editor
-description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Projects are organized within .specs/ folders anywhere in the repo. Accepts a project name, .specs/ path, or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
+description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Projects live in {repo-root}/.specs/{projectName}/. Accepts a project name, .specs/ path, or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
 tools: [read, edit, search, web, todo, agent]
 user-invocable: false
 disable-model-invocation: false
@@ -52,16 +52,12 @@ If the user asks for both PRD and architecture in one request, tell them to upda
 
 ## Step 2: Resolve repo root and locate project
 
-`.specs/` folders can be located anywhere in the repo (at repo root, in subdirectories like `src/services/`, or nested in other folders). Multiple `.specs/` folders can exist in different parts of the repo.
+The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
 
-1. Run `git rev-parse --show-toplevel` to capture `{repo-root}`. If the command fails (e.g., not in a git repository), ask the user to provide the repository root path and capture it as `{repo-root}`.
-2. Determine the `{projectName}` from the user's request (e.g., "Mockery"). If not provided, ask the user which project to work on.
-3. **Locate `.specs/` folder**: Search for `.specs/{projectName}/` starting from:
-   - The current working directory (walk up the tree)
-   - Common locations: `src/`, `services/`, `apps/`, `packages/`, `projects/`
-   - The repo root itself
-   If multiple `.specs/{projectName}/` folders are found, ask the user which one to use.
-4. Set `{docs-root}` = the located `.specs/{projectName}` folder
+1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
+2. Run `git rev-parse --show-toplevel` to capture `{repo-root}`. If the command fails (e.g., not in a git repository), ask the user to provide the repository root path and capture it as `{repo-root}`.
+3. Determine the `{projectName}` from the user's request (e.g., "Mockery"). If not provided, ask the user which project to work on.
+4. Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`. If the folder does not exist, create it.
 
 ## Step 3: Resolve project context
 

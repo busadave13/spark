@@ -1,6 +1,6 @@
 ---
 name: adr-reviewer
-description: Read-only reviewer for ADR files. Looks for ADRs in projects within a .specs/ folder (anywhere in the repo). Validates each ADR against the spark ADR template by running deterministic structural checks (D01–D11) per file, then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the ADRs", "check an ADR", "validate ADR-0001", or "find issues in the decision records".
+description: Read-only reviewer for ADR files. Looks for ADRs in projects within {repo-root}/.specs/{projectName}/. Validates each ADR against the spark ADR template by running deterministic structural checks (D01–D11) per file, then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the ADRs", "check an ADR", "validate ADR-0001", or "find issues in the decision records".
 tools: [read, search, todo]
 user-invocable: false
 ---
@@ -16,13 +16,14 @@ This skill reviews ADR files only. To review `ARCHITECTURE.md`, use `architectur
 
 ## Step 1: Resolve path and collect ADR files
 
-`.specs/` folders can be located anywhere in the repo (at repo root, in subdirectories, or nested in service folders). Multiple `.specs/` folders can exist in different parts of the repo.
+The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
 
-- If a project name is provided (e.g., `Mockery`), search for `.specs/{project}/adr/` starting from the current working directory and walking up the directory tree, or search in common locations (`src/`, `services/`, `apps/`, etc.). If multiple matches are found, ask the user which one to use.
+- If `{docs-root}` was provided as input (e.g., by the Spark orchestrator), use it as-is.
+- If a project name is provided (e.g., `Mockery`), run `git rev-parse --show-toplevel` to find `{repo-root}`, then set `{docs-root}` = `{repo-root}/.specs/{projectName}/`.
 - If a full path to a `.specs/` folder is provided, use it directly.
 - If the path is a specific `ADR-*.md` file, review that single file.
 - If the path points to an `adr/` directory, review all `ADR-*.md` files within it.
-- If no path is given, ask the user which project to review and where its `.specs/` folder is located.
+- If no path is given, ask the user which project to review.
 
 In a single parallel call, read:
 - all resolved `ADR-*.md` files in full

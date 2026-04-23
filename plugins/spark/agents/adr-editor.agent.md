@@ -40,18 +40,13 @@ Creates one or more ADR files and patches the Decision Log table in `ARCHITECTUR
 
 ## Step 1: Resolve paths
 
-`.specs/` folders can be located anywhere in the repo (at repo root, in subdirectories like `src/services/`, or nested in other folders). Multiple `.specs/` folders can exist in different parts of the repo.
+The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
 
-1. Run `git rev-parse --show-toplevel` to find `{repo-root}`. If that fails, ask the user.
-2. Determine `{projectName}` from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
-3. **Locate `.specs/` folder**: Search for `.specs/{projectName}/` starting from:
-   - The current working directory (walk up the tree)
-   - Common locations: `src/`, `services/`, `apps/`, `packages/`, `projects/`
-   - The repo root itself
-   If multiple `.specs/{projectName}/` folders are found, ask the user which one to use.
-4. Set `{docs-root}` = the located `.specs/{projectName}` folder.
-   - If no `.specs/{projectName}/` folder is found, tell the user that ARCHITECTURE.md must exist
-     before ADRs can be added and suggest running `architecture-editor` first.
+1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 5.
+2. Run `git rev-parse --show-toplevel` to find `{repo-root}`. If that fails, ask the user.
+3. Determine `{projectName}` from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
+4. Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`. If the folder does not exist, tell the user that ARCHITECTURE.md must exist
+   before ADRs can be added and suggest running `architecture-editor` first.
 5. Verify `{docs-root}/ARCHITECTURE.md` exists. If it does not, stop and direct the user to
    `architecture-editor` to create the architecture document first.
 6. Run `git config user.name` → `{resolved-owner}`. If empty, ask the user.

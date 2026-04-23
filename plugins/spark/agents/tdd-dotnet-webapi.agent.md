@@ -48,15 +48,13 @@ run `tdd-reviewer` or `spark-status`.
 
 ## Step 1: Resolve the target feature
 
-`.specs/` folders can be located anywhere in the repo.
+The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
 
-1. Run `git rev-parse --show-toplevel` and capture `{repo-root}`. If it fails, ask the
+1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
+2. Run `git rev-parse --show-toplevel` and capture `{repo-root}`. If it fails, ask the
    user for the repository root.
-2. Determine `{projectName}` from the user's request. If ambiguous, ask.
-3. Locate `.specs/{projectName}/` using the standard Spark search order:
-   current directory, `src/`, `services/`, `apps/`, `packages/`, `projects/`, repo root.
-   If multiple matches exist, ask the user which one to use.
-4. Set `{docs-root}` to the located `.specs/{projectName}` folder.
+3. Determine `{projectName}` from the user's request. If ambiguous, ask.
+4. Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`.
 5. Resolve the target feature:
    - specific `FEAT-NNN` or exact path -> use that file
    - feature name -> locate the matching file under `{docs-root}/feature/`

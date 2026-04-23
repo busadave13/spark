@@ -23,7 +23,7 @@ Accept a path to a specific feature file, the `feature/` directory, or a docs ro
 - If the path ends with `FEAT-*.md`, review that single file. `{docs-root}` = grandparent of the file (parent of `feature/`).
 - If the path ends with `feature/` or is a directory named `feature`, review all `FEAT-*.md` files within it. `{docs-root}` = parent of that directory.
 - If the path is any other directory, look for `{path}/feature/FEAT-*.md`. If found, `{docs-root}` = `{path}`.
-- If no path is given, check the current working directory and `./feature/` for `FEAT-*.md` files. If not found, ask the user.
+- If no path is given, ask the user which project to review, then resolve `{docs-root}` = `{repo-root}/.specs/{projectName}/` and look for `FEAT-*.md` files under `{docs-root}/feature/`.
 
 In a single parallel call, read:
 - all resolved `FEAT-*.md` files in full

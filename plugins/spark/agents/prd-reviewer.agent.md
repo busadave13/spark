@@ -18,7 +18,7 @@ Accept a path to `PRD.md` or a docs root directory.
 
 - If the path ends with `PRD.md`, that file is `{prd-path}`.
 - If the path is a directory, `{prd-path}` = `{directory}/PRD.md`.
-- If no path is given, check the current working directory for `PRD.md`. If not found, ask the user.
+- If no path is given, ask the user which project to review, then resolve `{prd-path}` = `{repo-root}/.specs/{projectName}/PRD.md`.
 
 Read `{prd-path}` in full before running any checks.
 

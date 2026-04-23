@@ -117,7 +117,7 @@ Run this pre-flight when `{projectName}`, `{docs-root}`, or `{resolvedNamespace}
 
 **Step A** — Ask for `{projectName}` if not supplied.
 
-**Step B** — Scan for `.specs/{projectName}/` (cwd, parent dirs, `src/`, `services/`, `apps/`, `packages/`, `projects/`, repo root). Not found → new project (`{specs-exists} = false`). One match → set `{docs-root}`. Multiple → ask user.
+**Step B** — Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`. If the folder exists, set `{specs-exists} = true`. If it does not exist, set `{specs-exists} = false` (the sub-agent will create it). The `.specs/` folder is always at the repo root — do not search subdirectories, CWD, or any other location.
 
 **Step C** — If `{specs-exists}` and `ARCHITECTURE.md` exists, extract `**Namespace**:` as `{resolvedNamespace}`. PRD has no Namespace field.
 
@@ -127,7 +127,7 @@ Run this pre-flight when `{projectName}`, `{docs-root}`, or `{resolvedNamespace}
 
 **Step F** — If routing to architecture editor and `{resolvedNamespace}` is unset, ask for it.
 
-**Step G** — Build subagent prompt with `{projectName}`, `{docs-root}` (or creation instruction), `{resolvedNamespace}`, and input sources. For "Both": PRD editor first, then architecture editor with resolved `{docs-root}`.
+**Step G** — Build subagent prompt with `{projectName}`, `{docs-root}` (always the concrete path `{repo-root}/.specs/{projectName}/`), `{resolvedNamespace}`, and input sources. The sub-agent receives `{docs-root}` as an input parameter and must use it as-is. For "Both": PRD editor first, then architecture editor with the same `{docs-root}`.
 
 **Step H** — Abort at any step → stop immediately, create nothing.
 
@@ -186,7 +186,7 @@ For "implement all approved features":
 
 ## Key principles
 
-- **Projects** live in `.specs/` folders anywhere in the repo
+- **Projects** live in `{repo-root}/.specs/{projectName}/` — the `.specs/` folder is always at the repo root
 - **Spec-driven**: PRD → Architecture → Feature → TDD implementation
 - **TDD only**: resolved per project from `agents/config.yaml` via **Project Type** in ARCHITECTURE.md
 - **Approved topology is implementation scope**: required hosts/companions must be created, not deferred

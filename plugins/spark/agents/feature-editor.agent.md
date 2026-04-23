@@ -1,6 +1,6 @@
 ---
 name: feature-editor
-description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Accepts a project folder, PRD.md, ARCHITECTURE.md, or existing FEAT-NNN-*.md path. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses references/feature-template.md and references/feature-section-guide.md as the authoritative output contract."
+description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Accepts a project name, .specs/ path, or existing FEAT-NNN-*.md path. Projects live in {repo-root}/.specs/{projectName}/. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses references/feature-template.md and references/feature-section-guide.md as the authoritative output contract."
 tools: [read, edit, search, web, todo]
 user-invocable: false
 ---
@@ -50,14 +50,15 @@ Parse the user's prompt to determine the operation mode:
 
 ### Resolve paths
 
+The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
+
 1. Run `git rev-parse --show-toplevel` to identify `{repo-root}`. If the command fails, ask the user to provide the repository root path manually.
-2. Resolve `{docs-root}` in this order:
+2. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 3.
+   Otherwise, resolve `{docs-root}`:
    - If the user provided a `FEAT-NNN-*.md` path, require it to live under `{docs-root}/feature/`; then `{docs-root}` is the parent of the `feature/` directory.
    - If the user provided `PRD.md` or `ARCHITECTURE.md`, `{docs-root}` is that file's containing directory.
-   - If the user provided a folder path, look for `{folder}/.specs/`.
-     - If it exists, use it.
-     - If it does not exist, stop and ask the user to provide the existing docs root or to create upstream spec docs first. Do not create a new docs root in this agent.
-   - If the conversation clearly refers to one project folder, check that folder for `.specs/`. If still ambiguous, ask.
+   - Otherwise, determine `{projectName}` from the user's request. Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`.
+   - If `{docs-root}` does not exist, stop and ask the user to provide the project name or to create upstream spec docs first. Do not create a new docs root in this agent.
 3. `{project-root}` = parent of `{docs-root}`.
 4. Resolve the owner with `git config user.name`. If empty, ask the user.
 
@@ -66,11 +67,11 @@ Parse the user's prompt to determine the operation mode:
 When the mode is **Review**, do not assume a single `{docs-root}`. Instead:
 
 1. Run `git rev-parse --show-toplevel` to identify `{repo-root}`. If the command fails, ask the user to provide the repository root path manually.
-2. Search the entire workspace for all `ARCHITECTURE.md` files (e.g. glob `**/ARCHITECTURE.md` under `{repo-root}`).
+2. Search `{repo-root}/.specs/` for project folders containing `ARCHITECTURE.md` (e.g. glob `{repo-root}/.specs/*/ARCHITECTURE.md`).
 3. If no `ARCHITECTURE.md` files are found, stop:
-   > "⛔ No `ARCHITECTURE.md` found in the workspace. Create and approve an architecture document first."
+   > "⛔ No `ARCHITECTURE.md` found in `.specs/`. Create and approve an architecture document first."
 4. If exactly one `ARCHITECTURE.md` is found, use its parent directory as `{docs-root}` automatically.
-5. If multiple `ARCHITECTURE.md` files are found, present the list to the user and ask which one should scope the review. Display each option with its path relative to `{repo-root}` so the user can distinguish between projects.
+5. If multiple `ARCHITECTURE.md` files are found, present the list to the user and ask which one should scope the review. Display each option with its project name so the user can distinguish between projects.
 6. After the user selects, set `{docs-root}` to the directory containing the chosen `ARCHITECTURE.md`.
 7. `{project-root}` = parent of `{docs-root}`.
 8. Confirm that `{docs-root}/feature/` exists and contains at least one `FEAT-*.md` file. If not, stop:
