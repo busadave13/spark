@@ -19,7 +19,7 @@ This skill reviews ADR files only. To review `ARCHITECTURE.md`, use `architectur
 Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
 
 - If `{docs-root}` was provided as input (e.g., by the Spark orchestrator), use it as-is.
-- If a project name is provided (e.g., `Mockery`), use the provided `{adr-root}` folder path or ask the user for the ADR folder location.
+- If a project name is provided (e.g., `Mockery`), use the provided `{docs-root}` folder path or ask the user for the ADR folder location.
 - If a full path to a project specification folder is provided, use it directly.
 - If the path is a specific `ADR-*.md` file, review that single file.
 - If the path points to an `adr/` directory, review all `ADR-*.md` files within it.

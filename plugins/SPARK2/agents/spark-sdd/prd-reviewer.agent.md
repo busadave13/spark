@@ -18,7 +18,7 @@ Accept a path to `PRD.md` or a docs root directory.
 
 - If the path ends with `PRD.md`, that file is `{prd-path}`.
 - If the path is a directory, `{prd-path}` = `{directory}/PRD.md`.
-- If no path is given, ask the user which project to review, then use the provided `{prd-root}` folder path or ask the user for the PRD location.
+- If no path is given, ask the user which project to review, then use the provided `{docs-root}` folder path or ask the user for the PRD location.
 
 Read `{prd-path}` in full before running any checks.
 

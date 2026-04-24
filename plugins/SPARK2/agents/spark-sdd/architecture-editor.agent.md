@@ -1,6 +1,6 @@
 ---
 name: architecture-editor
-description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Receives resolved folder paths from the Spark orchestrator. Accepts a project name or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
+description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Accepts a project name or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
 tools: [read, edit, search, web, todo, agent]
 user-invocable: false
 disable-model-invocation: false
@@ -28,7 +28,7 @@ Standalone ADR additions are out of scope for this agent — use `adr-editor` in
 ## Execution guidelines
 
 - **Architecture and ADR scope only** — stay focused on `ARCHITECTURE.md` and architecture-owned ADRs. `PRD.md` is read-only reference context — never modify it.
-- **Reference-led drafting** — architecture work must use this agent's architecture and ADR references.
+- **Reference-led drafting** — architecture work must use the orchestrator-provided architecture and ADR reference paths.
 - **Parallel reads** — batch independent reads into a single parallel tool call.
 - **Discovery first** — load metadata, headings, statuses, and indexes before full sections.
 - **Focused reads** — after discovery, read only the sections needed for the current update.
@@ -105,10 +105,10 @@ Read these in a single parallel call:
 - `{docs-root}/ARCHITECTURE.md` metadata block and section headings, if it exists
 - scan `{docs-root}/adr/` for `ADR-*.md` files
 - read ADR metadata blocks and titles
-- `references/architecture-template.md`
-- `references/architecture-section-guide.md`
-- `references/adr-template.md`
-- `references/adr-section-guide.md`
+- `{architecture-template-path}`
+- `{architecture-guide-path}`
+- `{adr-template-path}`
+- `{adr-guide-path}`
 
 Determine the next ADR number by scanning the discovered ADR files for the highest existing number and incrementing it. If none exist, start at `0001`.
 
@@ -160,7 +160,7 @@ If this is an update, summarize the current architecture briefly and ask what ch
 
 ### Step 4.5: Write `ARCHITECTURE.md`
 
-Write to `{docs-root}/ARCHITECTURE.md` and follow `references/architecture-template.md` precisely — do not change section order or add new sections.
+Write to `{docs-root}/ARCHITECTURE.md` and follow `{architecture-template-path}` precisely — do not change section order or add new sections.
 
 - Do not change section order or headings.
 - Replace every placeholder with real content.
@@ -256,6 +256,8 @@ Resolved context:
   docs-root: {docs-root}
   repo-root: {repo-root}
   resolved-owner: {resolved-owner}
+  template-path: {adr-template-path}
+  guide-path: {adr-guide-path}
   adr-directory: {docs-root}/adr/
   today: {today}
 

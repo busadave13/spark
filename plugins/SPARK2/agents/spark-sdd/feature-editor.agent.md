@@ -1,6 +1,6 @@
 ---
 name: feature-editor
-description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Receives resolved folder paths from the Spark orchestrator. Accepts a project name or existing FEAT-NNN-*.md path. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses references/feature-template.md and references/feature-section-guide.md as the authoritative output contract."
+description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Accepts a project name or existing FEAT-NNN-*.md path. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses the orchestrator-provided template and guide as the authoritative output contract."
 tools: [read, edit, search, web, todo]
 user-invocable: false
 ---
@@ -16,7 +16,7 @@ Use this agent when the user asks to create, update, or review feature specs. Ex
 ## Execution guidelines
 
 - **Feature-only scope** — only write files under `{docs-root}/feature/`. Never modify `PRD.md`, `ARCHITECTURE.md`, ADR files, or any file outside `{docs-root}/feature/`.
-- **Reference-led drafting** — always load `references/feature-template.md` and `references/feature-section-guide.md` before drafting. They are the source of truth for section order, quality, and completeness.
+- **Reference-led drafting** — always load the orchestrator-provided `{template-path}` and `{guide-path}` before drafting. They are the source of truth for section order, quality, and completeness.
 - **Parallel reads** — batch independent reads into a single parallel tool call.
 - **Discovery first** — inspect metadata, statuses, existing feature numbers, and relevant headings before reading full sections.
 - **Focused context loading** — read only the PRD, architecture, ADR, and existing feature sections needed for the current feature.
@@ -89,8 +89,8 @@ Read these in a single parallel discovery pass:
 - Scan `{docs-root}/adr/` for `ADR-*.md` files
 - Read each ADR metadata block and title
 - Scan `{docs-root}/feature/` for existing `FEAT-*.md` files
-- `references/feature-template.md`
-- `references/feature-section-guide.md`
+- `{template-path}`
+- `{guide-path}`
 - If updating, the target `FEAT-NNN-*.md` metadata block and section headings
 
 ### Approval gate
@@ -223,14 +223,14 @@ After loading discovery context (Step 2) and focused context (Step 3), review ev
 
 ### Load review context
 
-1. Read `references/feature-template.md` and `references/feature-section-guide.md` (if not already loaded).
+1. Read `{template-path}` and `{guide-path}` (if not already loaded).
 2. Read the full contents of every `FEAT-*.md` file in `{docs-root}/feature/`.
 3. Read the upstream `PRD.md`, `ARCHITECTURE.md`, and ADR files to validate feature content against upstream context.
 4. Explore the codebase under `{project-root}` to validate that type names, interface signatures, data models, blob paths, error codes, and other implementation details in the feature specs match the actual codebase. When the spec and code disagree, flag it as an issue in the review report.
 
 ### Review checklist
 
-For each feature spec, validate against `references/feature-section-guide.md` (the normative source for per-section quality criteria). Additionally check:
+For each feature spec, validate against `{guide-path}` (the normative source for per-section quality criteria). Additionally check:
 
 | Check | Criteria |
 |---|---|
@@ -263,7 +263,7 @@ Do not modify any feature files during a review. Review is read-only — report 
 
 ### Template contract
 
-`references/feature-template.md` and `references/feature-section-guide.md` are authoritative.
+`{template-path}` and `{guide-path}` are authoritative.
 
 - Keep the same heading order as the template.
 - Replace every placeholder with real content.
@@ -310,7 +310,7 @@ on the first line — nothing before it, nothing else on that line. The document
 
 ### Section requirements
 
-`references/feature-section-guide.md` is the normative source for per-section minimum requirements and quality criteria. The review checklist in Step 5 derives its checks from the same guide. When writing or reviewing, always defer to the section guide.
+`{guide-path}` is the normative source for per-section minimum requirements and quality criteria. The review checklist in Step 5 derives its checks from the same guide. When writing or reviewing, always defer to the provided guide.
 
 ### Content focus
 

@@ -12,8 +12,8 @@ spark:
       description: "Test Plans"
   folders:
     root: ./.specs
-    prd: ./.specs/{projectName}/prd
-    architecture: ./.specs/{projectName}/architecture
+    prd: ./.specs/{projectName}
+    architecture: ./.specs/{projectName}
     feature: ./.specs/{projectName}/feature
     adr: ./.specs/{projectName}/adr
     testplan: ./.specs/{projectName}/testplan
@@ -22,21 +22,21 @@ spark:
   agents:
     - type: prd
       editor: spark-sdd/prd.agent.md
-      evaluator: spark-sdd/prd-reviewer.agent.md
+      reviewer: spark-sdd/prd-reviewer.agent.md
       template: spark-sdd/references/prd-template.md
-      guidelines: spark-sdd/references/prd-template-guide.md
+      guide: spark-sdd/references/prd-template-guide.md
     - type: architecture
       editor: spark-sdd/architecture-editor.agent.md
-      evaluator: spark-sdd/architecture-reviewer.agent.md
+      reviewer: spark-sdd/architecture-reviewer.agent.md
       template: spark-sdd/references/architecture-template.md
-      guidelines: spark-sdd/references/architecture-template-guide.md
+      guide: spark-sdd/references/architecture-template-guide.md
     - type: feature
       editor: spark-sdd/feature-editor.agent.md
-      evaluator: spark-sdd/feature-reviewer.agent.md
+      reviewer: spark-sdd/feature-reviewer.agent.md
       template: spark-sdd/references/feature-template.md
-      guidelines: spark-sdd/references/feature-template-guide.md
+      guide: spark-sdd/references/feature-template-guide.md
     - type: adr
       editor: spark-sdd/adr-editor.agent.md
-      evaluator: spark-sdd/adr-reviewer.agent.md
+      reviewer: spark-sdd/adr-reviewer.agent.md
       template: spark-sdd/references/adr-template.md
-      guidelines: spark-sdd/references/adr-template-guide.md
+      guide: spark-sdd/references/adr-template-guide.md

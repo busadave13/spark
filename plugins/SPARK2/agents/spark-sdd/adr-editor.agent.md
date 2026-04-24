@@ -1,6 +1,6 @@
 ---
 name: adr-editor
-description: "Read/write agent for standalone ADR (Architecture Decision Record) authoring. Reads existing ARCHITECTURE.md and adr/ folder for context, then creates new ADR files and patches the Decision Log table in ARCHITECTURE.md. Use when a user wants to add a single ADR or small set of ADRs to a project that already has ARCHITECTURE.md. Triggers: 'write an ADR', 'create an ADR', 'document this decision', 'add an ADR for X', 'record our decision about Y', 'retroactive ADR'. Always prefer adr-editor over architecture-editor for focused ADR additions — architecture-editor rewrites the whole ARCHITECTURE.md document."
+description: "Read/write agent for standalone ADR (Architecture Decision Record) authoring. Reads existing ARCHITECTURE.md and adr/ folder for context, then creates new ADR files and patches the Decision Log table in ARCHITECTURE.md. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Use when a user wants to add a single ADR or small set of ADRs to a project that already has ARCHITECTURE.md. Triggers: 'write an ADR', 'create an ADR', 'document this decision', 'add an ADR for X', 'record our decision about Y', 'retroactive ADR'. Always prefer adr-editor over architecture-editor for focused ADR additions — architecture-editor rewrites the whole ARCHITECTURE.md document."
 tools: [read, edit, search, web, todo]
 user-invocable: false
 ---
@@ -91,7 +91,7 @@ For multiple decisions at once, collect the above for each before writing anythi
 
 ## Step 4: Write ADR file(s)
 
-Read `references/adr-template.md` before writing.
+Read `{template-path}` before writing.
 
 ### File naming and location
 
@@ -138,7 +138,7 @@ Every ADR must include:
 | Revisit Conditions | Optional — when this decision should be re-evaluated |
 | Related Decisions | Links to other ADRs that materially affect this one (if any) |
 
-See `references/adr-template.md` for the exact section order and formatting.
+See `{template-path}` for the exact section order and formatting.
 
 ---
 
@@ -202,5 +202,5 @@ Then prompt the user:
 
 | File | When to read |
 |---|---|
-| `references/adr-template.md` | Before writing any ADR — exact section order and formatting |
-| `references/adr-section-guide.md` | When the decision involves significant trade-offs or multiple rejected alternatives
+| `{template-path}` | Before writing any ADR — exact section order and formatting |
+| `{guide-path}` | When the decision involves significant trade-offs or multiple rejected alternatives
