@@ -1,6 +1,6 @@
 ---
 name: SPARK TDD
-description: "Coordinator agent for dotnet-webapi feature implementation. Orchestrates context, planning, implementation, and gate subagents with a compact execution brief so each phase loads only the context it needs. Reads Approved feature specs, writes testplan/tests/code, invokes the resolved reviewer, and finalizes status transitions through spark-status."
+description: "Coordinator agent for dotnet-webapi feature implementation. Orchestrates context, planning, implementation, and gate subagents with a compact execution brief so each phase loads only the context it needs. Reads Approved feature specs, writes testplan/tests/code, invokes the resolved reviewer, and finalizes feature status via the resolved editor agent."
 tools: [execute, read, agent, edit, search, todo, vscode/memory]
 user-invocable: true
 ---
@@ -27,7 +27,7 @@ No agent — including this coordinator — hardcodes `.specs` folder names, age
 - instruction bootstrap when repo-specific instructions are missing
 - coordination between context, planner, implementer, and gate phases
 - reviewer BLOCK convergence handling
-- all `spark-status` transitions
+- feature status transition via the resolved editor agent
 - the final summary re-read from disk
 
 ## Autonomy contract
@@ -39,7 +39,7 @@ This coordinator runs autonomously end to end. It may halt only when:
 3. the same reviewer BLOCK set recurs after an automatic fix attempt
 
 Do not ask the user whether to continue between phases. Do not ask the user whether to
-run the resolved reviewer agent or `spark-status`.
+run the resolved reviewer agent or perform status transitions.
 
 ## Execution rules
 
@@ -51,7 +51,7 @@ run the resolved reviewer agent or `spark-status`.
 - Pass a compact execution brief plus explicit file paths to later phases instead of
   pasting raw feature, architecture, ADR, code, or test content.
 - Trust the brief's `doc_snapshots` between phases. Re-read an on-disk doc only when
-  the caller just wrote to it (e.g. after `spark-status` transitions that changed
+  the caller just wrote to it (e.g. after editor agent transitions that changed
   metadata you are about to report). Cache the post-transition status back into the
   brief so downstream steps do not re-read again.
 - The implementer owns suite runs; cache the result in the brief's `suite_cache` so
@@ -230,10 +230,7 @@ Before approving, the coordinator must read `{testplan-path}` from disk and veri
 If any check fails, return to `{planner-agent}` with the specific discrepancy. Do not
 approve a testplan with mismatched counts — this guarantees gate failure.
 
-Once verified, approve `{testplan-path}` via `spark-status approve`.
-
-If `spark-status approve` rejects the testplan transition, halt and surface the
-rejection. Do not continue with a `Draft` testplan.
+Once verified, the testplan is ready for the implementer phase.
 
 ## Step 4: Implementer phase
 
@@ -280,8 +277,8 @@ execution_brief:
 Handle the result:
 
 - `halt` -> surface the blocker and stop
-- `replan` -> revert `{testplan-path}` to `Draft` via `spark-status revert`, re-run the
-  `{planner-agent}`, approve the rewritten testplan, then re-enter `{implementer-agent}`
+- `replan` -> re-run the
+  `{planner-agent}`, then re-enter `{implementer-agent}`
 - `implemented` -> continue to the gate phase
 
 Only use the `replan` path when AC or case counts changed. Cosmetic renames with the
@@ -344,8 +341,7 @@ Handle the result:
 - `pass` or `override` -> continue to Step 6
 - `fail` with a strictly smaller BLOCK set than the previous attempt -> update the brief,
   pass the latest findings back into `{implementer-agent}`, then re-run `{gate-agent}`
-- `fail` with the same or worse BLOCK set -> invoke `spark-status revert` on the feature
-  (if needed), render the latest findings under
+- `fail` with the same or worse BLOCK set -> render the latest findings under
   `## Reviewer findings - unresolved after auto-fix`, and stop
 
 Local gate failures (`PRECHECK_FAIL`) are treated the same as reviewer BLOCK failures:
@@ -362,18 +358,16 @@ misreads files or hallucinates content.
 
 Only after the gate returns `PASS` or `OVERRIDE`:
 
-1. Invoke `spark-status implement {testplan-path}`
-2. Invoke `spark-status implement {feature-path}`
+1. Resolve the feature editor agent from `spark.config.yaml` `spark.spark-sdd.agents` where `type: feature` (the `editor` field).
+2. Invoke the resolved feature editor agent to transition `{feature-path}` status to `Implemented`.
+3. Verify the editor agent reports success. If the transition is rejected, surface the rejection and stop. Do not work around it.
 
 Do not hand-edit `**Status**`, `**Version**`, or `**Last Updated**`.
 
-If either transition is rejected, surface the rejection and stop. Do not work around it.
-
 ## Step 7: Final summary
 
-The `spark-status implement` calls in Step 6 return the post-transition status.Cache
-those results into the brief's `doc_snapshots.feature.status` and
-`doc_snapshots.testplan.status` so we do not re-read the files.
+The feature editor transition in Step 6 returns the post-transition status. Cache
+those results into the brief's `doc_snapshots.feature.status` so we do not re-read the file.
 
 Report from the cached snapshots (not from memory of earlier phases):
 
@@ -390,8 +384,8 @@ Report from the cached snapshots (not from memory of earlier phases):
 - remaining ambiguities
 - suggested follow-on tests
 
-Never claim `Implemented` unless the status reported by the `spark-status implement`
-subagent (and captured into `doc_snapshots`) is `Implemented`. If the subagent's result
+Never claim `Implemented` unless the status reported by the feature editor agent
+(and captured into `doc_snapshots`) is `Implemented`. If the agent's result
 was ambiguous or did not return a status, re-read the file once — but this is the
 exception, not the rule.
 

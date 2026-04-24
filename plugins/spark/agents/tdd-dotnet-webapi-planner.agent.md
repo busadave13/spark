@@ -18,7 +18,7 @@ test-plan authoring.
   before writing.
 - Trust the brief's `doc_snapshots` and `acceptance_criteria` blocks as the primary
   context source. Re-read the feature spec only when **writing** to it in Step 3.
-- The coordinator owns `spark-status` transitions. This phase writes files only.
+- The coordinator owns document status transitions. This phase writes files only.
 - If any blocker remains, halt and do not write the testplan.
 
 ## Step 1: Refresh the minimum source of truth

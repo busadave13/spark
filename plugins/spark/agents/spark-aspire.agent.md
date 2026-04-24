@@ -23,7 +23,7 @@ No path, project name, or skill reference is hardcoded. All values originate fro
 ## What this agent owns
 
 - reading `spark.config.yaml` and resolving Aspire configuration
-- collecting and validating required inputs (namespace name, source root)
+- collecting and validating required inputs (project name, namespace name, source root)
 - discovering and classifying existing projects under the namespace
 - scaffolding the AppHost project with `Program.cs` wiring
 - scaffolding the ServiceDefaults project
@@ -78,6 +78,15 @@ From `spark.spark-aspire`, resolve:
 | `references.cli-reference` | `{aspireCliRef}` | `skills/aspire/references/cli-reference.md` |
 | `references.testing` | `{aspireTestRef}` | `skills/aspire/references/testing.md` |
 
+From `spark.folders`, resolve:
+
+| Config key | Variable | Example |
+|---|---|---|
+| `architecture` | `{architectureFolderPattern}` | `.specs/{projectName}` |
+
+The `{architectureFolderPattern}` is used in Step 1 to locate ARCHITECTURE.md and
+suggest a namespace default when prompting the user.
+
 All reference paths are relative to the config file's directory (`plugins/SPARK/agents/`).
 
 ### Abort messages
@@ -97,8 +106,27 @@ at once — do not proceed until all required inputs are confirmed.
 
 | Input | Required | Description | Example |
 |---|---|---|---|
-| `namespaceName` | Yes | Parent folder name under `{sourceRoot}/` (PascalCase) | `Test` |
+| `projectName` | Yes | The project name (PascalCase). | `Mockery` |
+| `namespaceName` | Yes | Top-level folder name under `{sourceRoot}/` (PascalCase). The namespace folder is always the first-level child of `{sourceRoot}/`. | `Test` |
 | `sourceRoot` | No | Override from config `roots.source`. Defaults to config value. | `src` |
+
+### Namespace suggestion from ARCHITECTURE.md
+
+When the user provides `projectName` but not `namespaceName`, attempt to suggest a
+default before prompting:
+
+1. Resolve `{architectureFolderPattern}` from Step 0 (e.g., `.specs/{projectName}`).
+2. Replace `{projectName}` in the pattern and read
+   `{repoRoot}/{architectureFolder}/ARCHITECTURE.md`.
+3. Parse the header blockquote for `> **Namespace**: {value}`.
+4. If found, include the value as a suggested default in the `ask_user` prompt:
+   > "ARCHITECTURE.md lists namespace as `{value}`. Use this? (or provide a different
+   > namespace name)"
+5. If ARCHITECTURE.md is not found or the `Namespace` field is missing, prompt with no
+   suggestion.
+
+The user must always confirm or provide the namespace — this is a convenience hint, not
+silent resolution.
 
 ### Derived values
 
@@ -112,6 +140,22 @@ at once — do not proceed until all required inputs are confirmed.
 {serviceDefaultsCsproj} = {serviceDefaultsDir}/{serviceDefaultsName}.csproj
 {namespaceNameLower}    = namespaceName.ToLowerInvariant()
 {workspacePath}         = {namespaceRoot}/{namespaceNameLower}.code-workspace
+```
+
+The namespace folder (`{namespaceRoot}`) is always the top-level folder directly under
+`{sourceRoot}/`. AppHost and ServiceDefaults are created as siblings of the project
+folders inside the namespace — never nested inside a specific project.
+
+**Example:** For `projectName = Mockery` and `namespaceName = Test`:
+```
+src/Test/                   ← {namespaceRoot}
+  ├── AppHost/              ← {appHostDir}  (created here, NOT in src/Test/Mockery/)
+  ├── ServiceDefaults/      ← {serviceDefaultsDir}
+  ├── Mockery/              ← existing project folder
+  │   ├── Mockery/
+  │   ├── Mockery.Shared/
+  │   └── Mockery.UnitTests/
+  └── test.code-workspace
 ```
 
 ### Precondition checks
@@ -167,6 +211,9 @@ projects:
     classification: test
     relative_path: ../Mockery/Mockery.UnitTests/Mockery.UnitTests.csproj
 ```
+
+Note: `relative_path` values are always relative to `{appHostDir}` (which lives at
+`{namespaceRoot}/{appHostName}/`), not relative to any project subfolder.
 
 ### Stop condition
 

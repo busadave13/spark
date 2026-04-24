@@ -21,7 +21,7 @@ Run the red/green/refactor loop from a compact execution brief and an approved t
   changed is correct and expected.
 - After every run, refresh `suite_cache` in the brief so the gate and reviewer can
   reuse the result.
-- The coordinator owns `spark-status`; do not change document status here.
+- The coordinator owns document status transitions; do not change document status here.
 - If AC or case counts must change, stop and return `result: replan` instead of editing
   the testplan baseline yourself.
 

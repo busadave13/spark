@@ -18,7 +18,7 @@ Run the final traceability and quality gate without changing document status or 
 - Re-read on disk only when the snapshot is missing the exact detail a check needs, or
   when validating live structural state on the filesystem.
 - Read `{reviewer-checklist-reference}` (resolved from `spark.config.yaml` and passed by the coordinator) before invoking the resolved `{reviewer-agent}`.
-- Do not invoke `spark-status` here; the coordinator owns all status transitions.
+- Do not change document status here; the coordinator owns all status transitions.
 - Do not hardcode agent names or reference paths; use the resolved values passed by the coordinator.
 - **On retry, emit a delta.** Populate `reviewer_gate.delta` with `new_blocks`,
   `resolved_blocks`, and `unchanged_blocks` relative to

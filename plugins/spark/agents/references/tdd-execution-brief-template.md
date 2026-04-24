@@ -139,7 +139,7 @@ notes:
   readers treat the entry as valid only when a fresh hash of the same files still
   matches `code_sha`. Mismatch = re-run the suite.
 - `doc_snapshots.<doc>.status` is authoritative between phases. The only place a phase
-  must re-read on disk is when `spark-status` (or another writer) just changed the
+  must re-read on disk is when an editor agent (or another writer) just changed the
   file; that writer must also update the matching snapshot.
 - `reviewer_gate.passed_check_ids` is additive within one feature cycle; it is cleared
-  when the feature cycle ends (gate PASS/OVERRIDE + spark-status implement succeeded).
+  when the feature cycle ends (gate PASS/OVERRIDE + feature-editor implement succeeded).
