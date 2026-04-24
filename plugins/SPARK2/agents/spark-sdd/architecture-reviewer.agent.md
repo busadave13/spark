@@ -2,7 +2,7 @@
 name: architecture-reviewer
 description: Read-only reviewer for ARCHITECTURE.md files. Validates an existing architecture doc against the spark architecture template by running deterministic structural checks (A01–A30), then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the architecture", "check ARCHITECTURE.md", "validate the architecture doc", or "find issues in the architecture".
 tools: [read, search, todo]
-user-invocable: false
+user-invocable: true
 ---
 
 # Architecture Review Skill

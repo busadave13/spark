@@ -2,7 +2,7 @@
 name: prd-reviewer
 description: Read-only reviewer for PRD.md files. Validates an existing PRD against the spark PRD template by running deterministic structural checks (R01–R20+), then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the PRD", "check the PRD", "validate the PRD", or "find issues in the PRD".
 tools: [read, search, todo]
-user-invocable: false
+user-invocable: true
 ---
 
 # PRD Review Skill

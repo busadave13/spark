@@ -90,10 +90,12 @@ Subagents receive these values pre-resolved; they must not hardcode folder names
 1. Read `spark.spark-sdd.enabled`. If `false`, abort.
 2. Find the `spark.agents` entry whose `type` matches the requested spec type, case-insensitive and trimmed.
 3. If no match, abort.
-4. Use `editor` for create and update work.
-5. Use `reviewer` for reviews.
+4. For create/update work, use `editor` as the `agentName` argument to `runSubagent`.
+5. For reviews, use `reviewer` as the `agentName` argument to `runSubagent`.
 6. Resolve `template` and `guide` from config and pass them to subagents as explicit parameters instead of relying on hardcoded `references/...` paths in the subagent prompt.
 7. Pass the resolved folder paths from `spark.config.yaml` needed by the target workflow. Always include `{docs-root}` and `{specs-root}`. Include `{feature-root}`, `{adr-root}`, and `{testplan-root}` only when the workflow needs them.
+
+**Important**: `runSubagent` requires agent names, not file paths. Always use `editor` / `reviewer` from config as the `agentName` parameter.
 
 ### Abort messages
 

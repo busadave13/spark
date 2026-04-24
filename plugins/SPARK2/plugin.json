@@ -11,5 +11,8 @@
   ],
   "skills": [
     "skills/"
+  ],
+  "instructions": [
+    "spark.instructions.md"
   ]
 }

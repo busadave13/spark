@@ -2,7 +2,7 @@
 name: feature-reviewer
 description: Read-only reviewer for feature spec files. Validates FEAT-NNN-*.md files under the feature/ directory against the spark feature template by running deterministic structural checks (F01–F12+) per file, then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the feature specs", "check FEAT-001", "validate feature docs", or "find issues in the feature specs".
 tools: [read, search, todo]
-user-invocable: false
+user-invocable: true
 ---
 
 # Feature Review

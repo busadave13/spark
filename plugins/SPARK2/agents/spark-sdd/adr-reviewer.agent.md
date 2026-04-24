@@ -2,7 +2,7 @@
 name: adr-reviewer
 description: Read-only reviewer for ADR files. Validates each ADR against the spark ADR template by running deterministic structural checks (D01–D11) per file, then reports findings by severity. Does not modify or fix files — output only. Receives resolved folder paths from the Spark orchestrator. Use whenever a user asks to "review the ADRs", "check an ADR", "validate ADR-0001", or "find issues in the decision records".
 tools: [read, search, todo]
-user-invocable: false
+user-invocable: true
 ---
 
 # ADR Reviewer

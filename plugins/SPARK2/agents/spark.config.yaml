@@ -21,22 +21,22 @@ spark:
     enabled: true
   agents:
     - type: prd
-      editor: spark-sdd/prd.agent.md
-      reviewer: spark-sdd/prd-reviewer.agent.md
+      editor: prd
+      reviewer: prd-reviewer
       template: spark-sdd/references/prd-template.md
       guide: spark-sdd/references/prd-template-guide.md
     - type: architecture
-      editor: spark-sdd/architecture-editor.agent.md
-      reviewer: spark-sdd/architecture-reviewer.agent.md
+      editor: architecture-editor
+      reviewer: architecture-reviewer
       template: spark-sdd/references/architecture-template.md
       guide: spark-sdd/references/architecture-template-guide.md
     - type: feature
-      editor: spark-sdd/feature-editor.agent.md
-      reviewer: spark-sdd/feature-reviewer.agent.md
+      editor: feature-editor
+      reviewer: feature-reviewer
       template: spark-sdd/references/feature-template.md
       guide: spark-sdd/references/feature-template-guide.md
     - type: adr
-      editor: spark-sdd/adr-editor.agent.md
-      reviewer: spark-sdd/adr-reviewer.agent.md
+      editor: adr-editor
+      reviewer: adr-reviewer
       template: spark-sdd/references/adr-template.md
       guide: spark-sdd/references/adr-template-guide.md

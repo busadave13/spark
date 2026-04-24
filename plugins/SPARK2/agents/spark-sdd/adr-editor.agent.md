@@ -2,7 +2,7 @@
 name: adr-editor
 description: "Read/write agent for standalone ADR (Architecture Decision Record) authoring. Reads existing ARCHITECTURE.md and adr/ folder for context, then creates new ADR files and patches the Decision Log table in ARCHITECTURE.md. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Use when a user wants to add a single ADR or small set of ADRs to a project that already has ARCHITECTURE.md. Triggers: 'write an ADR', 'create an ADR', 'document this decision', 'add an ADR for X', 'record our decision about Y', 'retroactive ADR'. Always prefer adr-editor over architecture-editor for focused ADR additions — architecture-editor rewrites the whole ARCHITECTURE.md document."
 tools: [read, edit, search, web, todo]
-user-invocable: false
+user-invocable: true
 ---
 
 # ADR Editor
