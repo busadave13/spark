@@ -40,12 +40,12 @@ Creates one or more ADR files and patches the Decision Log table in `ARCHITECTUR
 
 ## Step 1: Resolve paths
 
-The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 5.
 2. Run `git rev-parse --show-toplevel` to find `{repo-root}`. If that fails, ask the user.
 3. Determine `{projectName}` from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
-4. Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`. If the folder does not exist, tell the user that ARCHITECTURE.md must exist
+4. If `{docs-root}` was not provided, ask the user for the project specification folder path. If the folder does not exist, tell the user that ARCHITECTURE.md must exist
    before ADRs can be added and suggest running `architecture-editor` first.
 5. Verify `{docs-root}/ARCHITECTURE.md` exists. If it does not, stop and direct the user to
    `architecture-editor` to create the architecture document first.

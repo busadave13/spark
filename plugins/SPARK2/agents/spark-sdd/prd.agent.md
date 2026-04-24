@@ -1,6 +1,6 @@
 ---
 name: prd
-description: "Read/write agent that creates or updates PRD.md — the foundational product requirements document for a Spark project. Reads existing PRD.md and project context, then writes or updates {docs-root}/PRD.md. Projects live in {repo-root}/.specs/{projectName}/. Accepts a project name, .specs/ path, or existing PRD.md path."
+description: "Read/write agent that creates or updates PRD.md — the foundational product requirements document for a Spark project. Reads existing PRD.md and project context, then writes or updates {docs-root}/PRD.md. Receives resolved folder paths from the Spark orchestrator. Accepts a project name or existing PRD.md path."
 tools: [read, edit, search, web, todo]
 user-invocable: false
 ---
@@ -13,7 +13,7 @@ what is being built, for whom, and why.
 ## Usage examples
 
 - "Create a PRD for Mockery"
-- "Update PRD.md at src/services/.specs/Mockery/PRD.md"
+- "Update PRD.md for the Mockery project"
 - "Review the PRD in the Mockery project"
 
 ## Execution guidelines
@@ -26,12 +26,12 @@ what is being built, for whom, and why.
 
 ## Step 1: Resolve project name and docs root
 
-The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
 2. **Determine `{projectName}`** — extract the project name from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
-3. **Resolve `{docs-root}`**: Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`. If the folder does not exist, create it.
-4. Set `{docs-root}` = the resolved `.specs/{projectName}` folder.
+3. **Resolve `{docs-root}`**: If not provided by the orchestrator, ask the user for the project specification folder path. If the folder does not exist, create it.
+4. Set `{docs-root}` = the resolved project specification folder.
 
 If the user asks to review the PRD, skip the interview (Step 2), skip generation (Step 3), and go directly to the PRD review flow (Step 3a).
 

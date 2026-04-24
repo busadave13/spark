@@ -1,6 +1,6 @@
 ---
 name: feature-editor
-description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Accepts a project name, .specs/ path, or existing FEAT-NNN-*.md path. Projects live in {repo-root}/.specs/{projectName}/. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses references/feature-template.md and references/feature-section-guide.md as the authoritative output contract."
+description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Receives resolved folder paths from the Spark orchestrator. Accepts a project name or existing FEAT-NNN-*.md path. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses references/feature-template.md and references/feature-section-guide.md as the authoritative output contract."
 tools: [read, edit, search, web, todo]
 user-invocable: false
 ---
@@ -32,10 +32,10 @@ Parse the user's prompt to determine the operation mode:
 | User provides | Mode | Behavior |
 |---|---|---|
 | Existing `FEAT-NNN-*.md` path | **Update** | Update that feature spec in place |
-| Folder path + request to create feature(s) | **Create** | Reuse `{folder}/.specs/` as `{docs-root}` |
+| Folder path + request to create feature(s) | **Create** | Reuse provided `{docs-root}` |
 | Path to `PRD.md` | **Create** | `{docs-root}` = directory containing `PRD.md` |
 | Path to `ARCHITECTURE.md` | **Create** | `{docs-root}` = directory containing `ARCHITECTURE.md` |
-| "Create a feature" with one clear project in context | **Create** | Resolve `{docs-root}` from that project's `.specs/` folder |
+| "Create a feature" with one clear project in context | **Create** | Resolve `{docs-root}` from orchestrator-provided folder paths |
 | "Update a feature" without a `FEAT` path | **Ask** | Ask for the existing feature file path or enough info to locate it |
 | "Review features" or "review all feature docs" | **Review** | Search for all `ARCHITECTURE.md` files, let the user select one, then review only the features in that document's `{docs-root}/feature/` folder |
 | Request is really about PRD, architecture, or ADR changes | **Stop** | Do not continue; tell the user to use `prd-editor` or `architecture-editor` — this agent never modifies upstream documents |
@@ -50,14 +50,14 @@ Parse the user's prompt to determine the operation mode:
 
 ### Resolve paths
 
-The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
 
 1. Run `git rev-parse --show-toplevel` to identify `{repo-root}`. If the command fails, ask the user to provide the repository root path manually.
 2. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 3.
    Otherwise, resolve `{docs-root}`:
    - If the user provided a `FEAT-NNN-*.md` path, require it to live under `{docs-root}/feature/`; then `{docs-root}` is the parent of the `feature/` directory.
    - If the user provided `PRD.md` or `ARCHITECTURE.md`, `{docs-root}` is that file's containing directory.
-   - Otherwise, determine `{projectName}` from the user's request. Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`.
+   - Otherwise, ask the user for the project specification folder path.
    - If `{docs-root}` does not exist, stop and ask the user to provide the project name or to create upstream spec docs first. Do not create a new docs root in this agent.
 3. `{project-root}` = parent of `{docs-root}`.
 4. Resolve the owner with `git config user.name`. If empty, ask the user.
@@ -67,16 +67,16 @@ The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectNam
 When the mode is **Review**, do not assume a single `{docs-root}`. Instead:
 
 1. Run `git rev-parse --show-toplevel` to identify `{repo-root}`. If the command fails, ask the user to provide the repository root path manually.
-2. Search `{repo-root}/.specs/` for project folders containing `ARCHITECTURE.md` (e.g. glob `{repo-root}/.specs/*/ARCHITECTURE.md`).
+2. Search `{specs-root}` (provided by the orchestrator, or `{repo-root}/.specs/` as fallback) for project folders containing `ARCHITECTURE.md`.
 3. If no `ARCHITECTURE.md` files are found, stop:
-   > "⛔ No `ARCHITECTURE.md` found in `.specs/`. Create and approve an architecture document first."
+   > "⛔ No `ARCHITECTURE.md` found in the specs root. Create and approve an architecture document first."
 4. If exactly one `ARCHITECTURE.md` is found, use its parent directory as `{docs-root}` automatically.
 5. If multiple `ARCHITECTURE.md` files are found, present the list to the user and ask which one should scope the review. Display each option with its project name so the user can distinguish between projects.
 6. After the user selects, set `{docs-root}` to the directory containing the chosen `ARCHITECTURE.md`.
 7. `{project-root}` = parent of `{docs-root}`.
 8. Confirm that `{docs-root}/feature/` exists and contains at least one `FEAT-*.md` file. If not, stop:
    > "⛔ No feature specs found under `{docs-root}/feature/`. Nothing to review."
-9. **Only review features in `{docs-root}/feature/`** — do not scan or review feature specs from other `.specs/` folders in the workspace.
+9. **Only review features in `{docs-root}/feature/`** — do not scan or review feature specs from other project folders in the workspace.
 
 ## Step 2: Validate prerequisites and load discovery context
 

@@ -1,6 +1,6 @@
 ---
 name: architecture-editor
-description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Projects live in {repo-root}/.specs/{projectName}/. Accepts a project name, .specs/ path, or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
+description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Receives resolved folder paths from the Spark orchestrator. Accepts a project name or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
 tools: [read, edit, search, web, todo, agent]
 user-invocable: false
 disable-model-invocation: false
@@ -21,8 +21,8 @@ Standalone ADR additions are out of scope for this agent — use `adr-editor` in
 
 **Example invocations:**
 
-- "Create architecture for the Mockery project" → Searches for `.specs/Mockery/` and creates `ARCHITECTURE.md`
-- "Update ARCHITECTURE.md at src/services/.specs/Weather/ARCHITECTURE.md" → Uses the specified `.specs/` location
+- "Create architecture for the Mockery project" → Creates `ARCHITECTURE.md` in the resolved docs root
+- "Update ARCHITECTURE.md for the Weather project" → Uses the orchestrator-provided folder paths
 - "Create architecture for XPCi project in /Users/daveharding/source/repos/xpci/Xbox.Xbet.Svc/src/Test/.specs" → Uses the full path
 
 ## Execution guidelines
@@ -52,18 +52,18 @@ If the user asks for both PRD and architecture in one request, tell them to upda
 
 ## Step 2: Resolve repo root and locate project
 
-The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
 2. Run `git rev-parse --show-toplevel` to capture `{repo-root}`. If the command fails (e.g., not in a git repository), ask the user to provide the repository root path and capture it as `{repo-root}`.
 3. Determine the `{projectName}` from the user's request (e.g., "Mockery"). If not provided, ask the user which project to work on.
-4. Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`. If the folder does not exist, create it.
+4. If `{docs-root}` was not provided, ask the user for the project specification folder path. If the folder does not exist, create it.
 
 ## Step 3: Resolve project context
 
-1. `{repo-root}` and `{docs-root}` are already known from Step 2 (the located `.specs/{projectName}` folder).
+1. `{repo-root}` and `{docs-root}` are already known from Step 2 (the resolved project specification folder).
 2. Verify `{docs-root}` exists. If not, ask the user to confirm the project name and location.
-3. `{project-root}` = parent of `{docs-root}` (the `.specs/` folder's parent directory)
+3. `{project-root}` = parent of `{docs-root}`
 
 ### Resolve Owner
 
