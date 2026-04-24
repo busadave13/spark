@@ -23,20 +23,20 @@ spark:
     - type: prd
       editor: prd-editor
       reviewer: prd-reviewer
-      template: spark-sdd/references/prd-template.md
-      guide: spark-sdd/references/prd-template-guide.md
+      template: references/prd-template.md
+      guide: references/prd-template-guide.md
     - type: architecture
       editor: architecture-editor
       reviewer: architecture-reviewer
-      template: spark-sdd/references/architecture-template.md
-      guide: spark-sdd/references/architecture-template-guide.md
+      template: references/architecture-template.md
+      guide: references/architecture-template-guide.md
     - type: feature
       editor: feature-editor
       reviewer: feature-reviewer
-      template: spark-sdd/references/feature-template.md
-      guide: spark-sdd/references/feature-template-guide.md
+      template: references/feature-template.md
+      guide: references/feature-template-guide.md
     - type: adr
       editor: adr-editor
       reviewer: adr-reviewer
-      template: spark-sdd/references/adr-template.md
-      guide: spark-sdd/references/adr-template-guide.md
+      template: references/adr-template.md
+      guide: references/adr-template-guide.md
