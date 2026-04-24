@@ -21,7 +21,7 @@ spark:
     enabled: true
   agents:
     - type: prd
-      editor: prd
+      editor: prd-editor
       reviewer: prd-reviewer
       template: spark-sdd/references/prd-template.md
       guide: spark-sdd/references/prd-template-guide.md
