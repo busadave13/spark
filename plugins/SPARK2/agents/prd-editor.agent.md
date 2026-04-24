@@ -2,7 +2,7 @@
 name: prd-editor
 description: "Read/write agent that creates or updates PRD.md — the foundational product requirements document for a Spark project. Reads existing PRD.md and project context, then writes or updates {docs-root}/PRD.md. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Accepts a project name or existing PRD.md path."
 tools: [read, edit, search, web, todo]
-user-invocable: true
+user-invocable: false
 ---
 
 # PRD Author

@@ -2,7 +2,7 @@
 name: feature-editor
 description: "Read/write agent that creates or updates feature spec files under {docs-root}/feature/. Reads PRD.md, ARCHITECTURE.md, and ADRs as read-only reference context; writes FEAT-NNN-*.md feature spec files. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Accepts a project name or existing FEAT-NNN-*.md path. Requires upstream PRD, Architecture, and ADRs to already exist; new features require them to be Approved. Uses the orchestrator-provided template and guide as the authoritative output contract."
 tools: [read, edit, search, web, todo]
-user-invocable: true
+user-invocable: false
 ---
 
 # Feature Spec Agent

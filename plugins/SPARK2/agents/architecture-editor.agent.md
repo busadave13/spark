@@ -2,8 +2,7 @@
 name: architecture-editor
 description: "Read/write agent that creates or updates ARCHITECTURE.md and architecture-owned ADRs. Reads PRD.md as read-only reference context — never modifies it. Writes ARCHITECTURE.md and supporting ADR files within the project. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Accepts a project name or existing ARCHITECTURE.md path. Feature specs, standalone ADR-only requests, and PRD changes are out of scope — use feature-editor or adr-editor instead."
 tools: [read, edit, search, web, todo, agent]
-user-invocable: true
-disable-model-invocation: false
+user-invocable: false
 ---
 
 # Architecture Spec Agent
