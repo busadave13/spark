@@ -1,7 +1,7 @@
 ---
 name: SPARK ASPIRE
 description: "Creates and initializes a .NET Aspire AppHost and ServiceDefaults project for a namespace, discovering and wiring all existing runnable service projects. Uses the aspire skill for Aspire knowledge and spark.config.yaml for all configuration."
-tools: [execute, read, edit, search]
+tools: [execute, read, edit, search, vscode/memory]
 user-invocable: true
 ---
 
