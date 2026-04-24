@@ -49,7 +49,9 @@ Match intent to the correct agent. Every agent name is resolved from `spark.conf
 | Review ADRs | resolved `adr` reviewer | parallel - one per ADR |
 | Create / update feature spec | resolved `feature` editor | |
 | Review feature specs | resolved `feature` reviewer | |
-| Resolve document comments | resolved editor for the target spec type | The orchestrator parses the sidecar and delegates the approved fix batch |
+| Resolve document comments | resolved `comments` editor | Orchestrator resolves project paths and spec type, delegates sidecar discovery and full processing to comments-editor |
+| Approve / revert / change status | resolved editor for the target spec type | Status transitions are owned by the appropriate editor |
+| Testplan work | — | Reserved in config; not yet routed to an agent |
 | Create new project | chained: resolved `prd` editor -> resolved `architecture` editor | via new-project preflight |
 ## Agent resolution
 
@@ -88,16 +90,14 @@ Subagents receive these values pre-resolved; they must not hardcode folder names
 ### Spec agents (`spark.agents`)
 
 1. Read `spark.spark-sdd.enabled`. If `false`, abort.
-2. Find the `spark.agents` entry whose `type` matches the requested spec type, case-insensitive and trimmed. (Note: `spark.documents` is informational metadata only — agent resolution uses `spark.agents`, not `spark.documents`.)
-3. If no match, abort.
+2. Find the `spark.agents` entry whose `type` matches the requested spec type, case-insensitive and trimmed.
+3. If no match in `spark.agents`, check whether the type appears in `spark.documents`. If it does, the type is known but has no routed agent — use the "known but unrouted" abort. If it does not appear in `spark.documents` either, use the "no matching spec type" abort.
 4. For create/update work, use the `editor` value as the agent name when invoking the `agent` tool.
 5. For reviews, use the `reviewer` value as the agent name when invoking the `agent` tool.
 6. Resolve `template` and `guide` from config and pass them to subagents as explicit parameters instead of relying on hardcoded `references/...` paths in the subagent prompt.
 7. Pass the resolved folder paths from `spark.config.yaml` needed by the target workflow. Always include `{docs-root}` and `{specs-root}`. Include `{feature-root}`, `{adr-root}`, and `{testplan-root}` only when the workflow needs them.
 
 **Important**: The `agent` tool requires agent names, not file paths. Always use the `editor` / `reviewer` value from config as the agent name parameter.
-
-> **Direct-invocation caveat**: Editor agents are `user-invocable` but depend on orchestrator-provided folder paths, template paths, and guide paths. When invoked directly (outside this orchestrator), editors may lack these resolved paths and could fail or behave inconsistently. Prefer routing through this orchestrator for reliable config resolution.
 
 ### Abort messages
 
@@ -136,77 +136,39 @@ Architecture without PRD is allowed - codebase review and interview become the p
 
 ## Comment resolution workflow
 
-This orchestrator handles comment resolution for specification documents by reading the comment sidecar, building a compact fix brief, and delegating the approved document changes to the resolved spec editor for that document type.
+This orchestrator handles comment resolution for specification documents by resolving the project context and spec type, then delegating sidecar discovery and comment processing to the resolved `comments` editor.
 
-### Step 1: Resolve the target document
+### Step 1: Resolve project and spec type
 
-- Require a document path as the anchor. Supported targets are `PRD.md`, `ARCHITECTURE.md`, `ADR-NNNN-*.md`, and `FEAT-NNN-*.md` under the resolved folder paths from `spark.config.yaml`.
-- If the user does not name the document, ask which document's comments should be resolved before proceeding.
-- Derive the sidecar path by replacing the document extension with `.comments.json` in the same directory.
-- Verify that both files exist before proceeding.
-- If the document does not exist, report that and stop.
-- If the sidecar does not exist, report that there are no pending comments for that document and stop.
+- Identify the project name and spec type from the user's request (e.g. "resolve comments on the Mockery PRD" → project = Mockery, spec-type = prd).
+- If the user does not specify a spec type (prd, architecture, adr, feature), ask before proceeding.
+- If the user does not specify a project, ask before proceeding.
+- Resolve folder paths from `spark.config.yaml` (`{docs-root}`, `{specs-root}`) by replacing `{projectName}` with the project name.
 
-### Step 2: Determine the spec type
+### Step 2: Delegate to comments-editor
 
-Infer the spec type from the anchored document path:
+- Resolve the `comments` agent from `spark.config.yaml` (`spark.agents` entry with `type: comments`).
+- Invoke the resolved comments editor via the `agent` tool, passing the following parameters in the prompt:
+  - `{spec-type}` — the document type (`prd`, `architecture`, `adr`, `feature`)
+  - `{project-name}` — the project name
+  - `{docs-root}` — the resolved project spec root
+  - `{specs-root}` — the resolved specs root
+  - `{adr-root}` — resolved ADR folder (only when `{spec-type}` is `adr`)
+  - `{feature-root}` — resolved feature folder (only when `{spec-type}` is `feature`)
+  - `{target-doc}` — (optional) specific document filename when the user names a single document (e.g. `FEAT-002-auth.md`, `ADR-0003-caching.md`). Omit when the user asks to resolve comments for all documents of a given spec type.
+- The comments-editor owns all downstream work: discovering the correct `.comments.json` sidecar(s), loading and parsing, locating anchors, applying changes, risky change confirmation, version bumping, sidecar cleanup, and returning a structured summary.
+- Do not read the sidecar or document yourself — the comments-editor handles all file operations.
 
-- `PRD.md` -> `prd`
-- `ARCHITECTURE.md` -> `architecture`
-- `ADR-*.md` -> `adr`
-- `FEAT-*.md` -> `feature`
+### Step 3: Report the outcome
 
-If the type still cannot be inferred, ask the user rather than guessing.
-
-### Step 3: Load and analyze the document plus sidecar
-
-- Read the target document and its `.comments.json` sidecar in parallel.
-- Treat every entry in `comments[]` as an active unresolved instruction.
-- Use `anchor.selectedText` as the primary locator.
-- If `selectedText` appears multiple times, disambiguate with `textContext.prefix` and `textContext.suffix`.
-- If the exact text no longer exists, use the prefix and suffix to find the closest matching passage and note that approximation in the brief.
-- If the passage cannot be located, mark that comment as skipped and report it to the user.
-
-Expected sidecar contract:
-
-- top-level `comments[]`
-- per-comment `id`
-- per-comment `body`
-- per-comment `anchor.selectedText`
-- optional `anchor.textContext.prefix`
-- optional `anchor.textContext.suffix`
-
-### Step 4: Build the editor brief
-
-For each resolvable comment, build a compact fix brief that includes:
-
-- document path
-- sidecar path
-- spec type
-- comment id
-- targeted passage or anchor summary
-- reviewer instruction from `body`
-- any approximation note if the anchor moved
-
-Batch all resolvable comments for the same document into one editor delegation so the editor can make a coherent update pass.
-
-### Step 5: Delegate approved comment fixes
-
-- Present any skipped or ambiguous comments before editing.
-- If the remaining comments are straightforward, delegate the full batch to the resolved editor for that document type. Comment resolution is treated as pre-approved by the user's request to resolve comments; explicit confirmation is only required for risky changes (see next bullet).
-- In the editor prompt, pass the resolved folder paths and resolved reference-file paths from `spark.config.yaml`, then instruct the editor to apply the comment-driven document changes, keep edits minimal, and delete the matching `.comments.json` sidecar after processing.
-- If a comment asks for a major structural deletion or another risky change, confirm with the user before delegating the edit.
-- If the editor subagent fails or reports partial application, surface the failure to the user with the list of unapplied comments so they can retry or resolve manually.
-
-### Step 6: Report the outcome
-
-- Summarize which comments were resolved, which were approximated, and which were skipped.
-- If all comments were skipped or the sidecar was empty, do not delegate an edit.
-- If any comments remain unresolved after editor execution, surface them clearly so the user can decide the next step.
+- Relay the comments-editor's structured resolution summary to the user.
+- The summary includes which comments were resolved, approximated, or skipped, plus version bump details.
+- If any comments were skipped, surface them clearly so the user can decide the next step.
+- If the comments-editor reports no pending comments for the given spec type, relay that to the user.
 
 ## Delegation rules
 
-- **Pass resolved context, not raw bulk.** Include project name, paths, namespace, sidecar paths, findings, comment briefs, and resolved folder paths from `spark.config.yaml` - not full document bodies unless the editor specifically needs them.
+- **Pass resolved context, not raw bulk.** Include project name, paths, namespace, findings, and resolved folder paths from `spark.config.yaml` - not full document bodies unless the editor specifically needs them.
 - **Always pass folder paths resolved from `spark.config.yaml`** - never hardcode `.specs` folder names in delegation prompts.
 - **Chain outputs.** Pass file paths or compact handoff blocks between steps.
 - **Do not modify files yourself.** Subagents own all file operations.
@@ -214,6 +176,7 @@ Batch all resolvable comments for the same document into one editor delegation s
 - **Ask when ambiguous.** If the request does not map to a single spec type or project, ask first.
 - **All document operations use named subagents** resolved from config. Do not load them as skills.
 - **Parallel ADR reviews.** One reviewer subagent per ADR file, in parallel.
+- **Reviewer agents are the canonical review path.** When reviews are routed through this orchestrator, always delegate to the dedicated reviewer agent. Some editors contain internal review flows for legacy or direct-invocation scenarios — those are not used by this orchestrator.
 
 ## Reviewer agents are read-only
 
@@ -252,6 +215,6 @@ For compound requests:
 - **Specification workflow**: PRD -> Architecture (+ ADRs as needed) -> Feature specs.
 - **Reserved config entries stay reserved until routed**: `testplan` may exist in config before the orchestrator exposes a testplan workflow.
 - **Templates are enforced by subagents**, not by this orchestrator.
-- **Comment resolution is orchestrated here**: parse the sidecar, route to the correct editor, and keep comment handling anchored to one document per invocation.
+- **Comment resolution is delegated to the comments-editor**: resolve the project, spec type, and folder paths, then delegate sidecar discovery and processing to the `comments` editor. Do not parse sidecars in this orchestrator.
 - **ADR numbering**: both the ADR editor and architecture editor scan `{docs-root}/adr/` for the highest `ADR-NNNN-*.md` and increment; update both in lockstep if this rule changes.
 - **Decision-importance heuristic**: a decision is major if it affects **3+ components**, constrains design choices for **6+ months**, or involves a **non-obvious trade-off**. Do not create ADRs for routine library choices, code style, or folder structure.

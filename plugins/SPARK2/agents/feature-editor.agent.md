@@ -67,7 +67,7 @@ Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do 
 When the mode is **Review**, do not assume a single `{docs-root}`. Instead:
 
 1. Run `git rev-parse --show-toplevel` to identify `{repo-root}`. If the command fails, ask the user to provide the repository root path manually.
-2. Search `{specs-root}` (provided by the orchestrator, or `{repo-root}/.specs/` as fallback) for project folders containing `ARCHITECTURE.md`.
+2. Search `{specs-root}` (provided by the orchestrator) for project folders containing `ARCHITECTURE.md`. If `{specs-root}` was not provided, ask the user for the specs root path — do not fall back to hardcoded paths.
 3. If no `ARCHITECTURE.md` files are found, stop:
    > "⛔ No `ARCHITECTURE.md` found in the specs root. Create and approve an architecture document first."
 4. If exactly one `ARCHITECTURE.md` is found, use its parent directory as `{docs-root}` automatically.
@@ -167,12 +167,11 @@ During codebase exploration, compare the feature spec's acceptance criteria, API
 5. The feature's current `Status` is not already `Implemented`.
 
 If all conditions are met, surface this finding in the report at Step 8: tell the user
-the codebase already implements every AC and recommend running `spark-status implement`
-(via `runSubagent`)
-on the feature spec (or, if the user wants the full TDD audit trail, running
-the resolved TDD agent against the existing implementation). `feature-editor` itself does **not**
+the codebase already implements every AC and note that the feature may be ready for status promotion
+through the appropriate editor.
+`feature-editor` itself does **not**
 write `Status: Implemented` — that transition is owned by the resolved TDD agent (after its
-`tdd-reviewer` gate passes) and by the `spark-status implement` subagent.
+`tdd-reviewer` gate passes) or by the orchestrator delegating a status change to this editor.
 
 If **any** spec content needs updating to match the codebase (type names, signatures, missing fields, etc.), the feature is **not** fully implemented from a spec perspective — fix the spec first, and the status remains `Draft` until the next review pass.
 
@@ -353,8 +352,8 @@ This is the **only** place the version is bumped. One bump, once, at the very en
 - **Not changed** → do not bump.
 
 > Status transitions to `Implemented` are owned by the resolved TDD agent (after its
-> `tdd-reviewer` gate passes) or by the `spark-status implement` subagent. `feature-editor`
-> does not write `Status: Implemented` itself.
+> `tdd-reviewer` gate passes) or by the orchestrator delegating a status change to this editor.
+> `feature-editor` does not write `Status: Implemented` itself.
 
 If multiple features were updated in the same pass, bump each independently.
 

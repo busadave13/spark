@@ -20,6 +20,8 @@ spark:
   spark-sdd:
     enabled: true
   agents:
+    - type: comments
+      editor: comments-editor
     - type: prd
       editor: prd-editor
       reviewer: prd-reviewer
