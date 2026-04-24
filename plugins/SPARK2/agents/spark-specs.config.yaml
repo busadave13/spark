@@ -1,27 +1,23 @@
 roots:
-    # All paths are resolved relative to this spark-specs.config.yaml file.
-    agents: .
-    skills: ../skills
-spark-specs:
-    enabled: true
-    agents:
-        - type: prd
-          editor: spark-specs/prd.agent.md
-          evaluator: spark-specs/prd-reviewer.agent.md
-          template: spark-specs/references/prd-template.md
-          guidelines: spark-specs/references/prd-template-guide.md
-        - type: architecture
-          editor: spark-specs/architecture-editor.agent.md
-          evaluator: spark-specs/architecture-reviewer.agent.md
-          template: spark-specs/references/architecture-template.md
-          guidelines: spark-specs/references/architecture-template-guide.md
-        - type: feature
-          editor: spark-specs/feature-editor.agent.md
-          evaluator: spark-specs/feature-reviewer.agent.md
-          template: spark-specs/references/feature-template.md
-          guidelines: spark-specs/references/feature-template-guide.md
-        - type: adr
-          editor: spark-specs/adr-editor.agent.md
-          evaluator: spark-specs/adr-reviewer.agent.md
-          template: spark-specs/references/adr-template.md
-          guidelines: spark-specs/references/adr-template-guide.md 
+  enabled: true
+  agents:
+    - type: prd
+      editor: spark-specs/prd.agent.md
+      evaluator: spark-specs/prd-reviewer.agent.md
+      template: spark-specs/references/prd-template.md
+      guidelines: spark-specs/references/prd-template-guide.md
+    - type: architecture
+      editor: spark-specs/architecture-editor.agent.md
+      evaluator: spark-specs/architecture-reviewer.agent.md
+      template: spark-specs/references/architecture-template.md
+      guidelines: spark-specs/references/architecture-template-guide.md
+    - type: feature
+      editor: spark-specs/feature-editor.agent.md
+      evaluator: spark-specs/feature-reviewer.agent.md
+      template: spark-specs/references/feature-template.md
+      guidelines: spark-specs/references/feature-template-guide.md
+    - type: adr
+      editor: spark-specs/adr-editor.agent.md
+      evaluator: spark-specs/adr-reviewer.agent.md
+      template: spark-specs/references/adr-template.md
+      guidelines: spark-specs/references/adr-template-guide.md

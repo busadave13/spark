@@ -7,4 +7,3 @@ root:
       feature: ./.specs/feature
       adr: ./.specs/adr
       testplan: ./.specs/testplan
-
