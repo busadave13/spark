@@ -1,7 +1,7 @@
 {
   "name": "SPARK",
   "description": "Spec-Driven Programming and AI Runtime Kit (SPARK)",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "Dave Harding"
   },
