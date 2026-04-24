@@ -15,6 +15,7 @@ This agent is read-only. It never edits files.
 
 ## Rules
 
+- When an execution brief is provided, validate that it contains `brief_schema_version: 3`. If the version is missing or unrecognized, halt with: "Execution brief schema version mismatch: expected 3, got {version}."
 - Always read `{reviewer-checklist-reference}` (resolved from config, passed by the caller) before running checks.
 - Prefer a compact execution brief when the caller provides one. Use it to avoid
   rediscovering feature metadata, AC inventory, and candidate file paths.

@@ -57,6 +57,8 @@ run the resolved reviewer agent or `spark-status`.
 - The implementer owns suite runs; cache the result in the brief's `suite_cache` so
   the gate and reviewer do not re-run the suite when `code_sha` still matches.
 - Pass resolved folder paths and resolved reference paths from `spark.config.yaml` into every subagent invocation so sub-agents do not reconstruct paths from assumptions.
+- **Execution brief schema version**: Every brief must include `brief_schema_version: 3` as a top-level field. All phase agents must validate that `brief_schema_version` matches their expected version and halt with a clear message on mismatch. This prevents silent contract drift between coordinator, context, planner, implementer, and gate agents. The coordinator must reject any brief returned by a phase agent that is missing `brief_schema_version` or carries a version it does not recognize.
+- **Testplan counts are verified from disk**: The coordinator never trusts a phase agent's claim about testplan case counts. After any phase writes or modifies `{testplan-path}`, the coordinator reads the file from disk and mechanically counts test-name rows before proceeding.
 
 ## Step 0: Read config and resolve workflow assets
 
@@ -179,10 +181,20 @@ If the context phase did return `requires_instruction_bootstrap: true` (e.g. the
 scaffold needs user input), fall back to:
 
 1. Ask for `projectNamespaceName` if not already known.
-2. Invoke `{scaffold-skill}` (resolved from `spark.spark-tdd.agents.{workflow}.scaffold`) via `runSubagent`.
-   Pass `{instructions-root}` (resolved from `spark.spark-tdd.roots.instructions`) so the skill writes to the resolved path.
-3. Wait for completion, then re-invoke `{context-agent}` once. The brief returned on
-   the second pass must not set `requires_instruction_bootstrap: true`.
+2. Invoke `{scaffold-skill}` via `runSubagent` **without** setting `agentName`.
+   `{scaffold-skill}` is a **skill name**, not a registered agent. Pass the skill's
+   SKILL.md file path (resolved from `{skills-root}/{scaffold-skill}/SKILL.md`) in the
+   prompt so the generic subagent can read and follow the skill instructions. Also pass
+   `{instructions-root}` (resolved from `spark.spark-tdd.roots.instructions`) so the
+   skill writes to the resolved path.
+3. Wait for completion. After successful scaffold, the coordinator may **patch the
+   existing brief** directly — set `structural_check.requires_instruction_bootstrap: false`,
+   clear scaffolded items from `structural_check.prerequisites_missing`, and update
+   `paths` — rather than re-invoking the full context phase. Re-invoke `{context-agent}`
+   only when the scaffold materially changed the project structure in ways the brief
+   cannot predict (e.g. new project references, changed namespaces).
+4. If re-invoked, the brief returned on the second pass must not set
+   `requires_instruction_bootstrap: true`.
 
 ## Step 3: Planner phase
 
@@ -204,7 +216,21 @@ execution_brief:
 Handle the result:
 
 - `halt` -> surface the ambiguity report and stop
-- `ready` -> approve `{testplan-path}` via `spark-status approve`
+- `ready` -> verify the testplan, then approve it
+
+### Post-planner verification
+
+Before approving, the coordinator must read `{testplan-path}` from disk and verify:
+
+1. The `**Plan baseline**` case count matches the number of test-name rows in the body
+   tables (count rows containing `FEAT` in each AC table).
+2. The `**Plan baseline**` AC count matches the number of `### AC-NN` headings.
+3. Every AC ID from the feature spec appears as an `### AC-NN` heading.
+
+If any check fails, return to `{planner-agent}` with the specific discrepancy. Do not
+approve a testplan with mismatched counts — this guarantees gate failure.
+
+Once verified, approve `{testplan-path}` via `spark-status approve`.
 
 If `spark-status approve` rejects the testplan transition, halt and surface the
 rejection. Do not continue with a `Draft` testplan.
@@ -213,6 +239,34 @@ rejection. Do not continue with a `Draft` testplan.
 
 Invoke the resolved `{implementer-agent}` with the current execution brief and the approved
 `{testplan-path}`.
+
+### Brief size management
+
+If the execution brief YAML plus the testplan content exceed approximately 150 lines of
+prompt payload, split the implementer invocation into **batched AC groups** (e.g. AC-1
+through AC-4, then AC-5 through AC-8). Each batch carries the full brief but only the
+relevant AC subset from the testplan. Merge the returned `suite_cache`,
+`coverage_targets`, and `notes` from each batch into the coordinator's brief before
+proceeding.
+
+### Implementer fallback
+
+If the implementer agent returns an error (e.g. response length limit exceeded) or no
+response, the coordinator should attempt the implementation directly using the brief and
+testplan, following the same red-green-refactor protocol the implementer agent would use.
+This is a fallback, not the preferred path — always try the resolved agent first.
+
+### Coverage map header reminder
+
+The coordinator's prompt to the implementer must include this explicit reminder:
+
+> Gate checks T03, C01, C02, C04 require `// FEAT-NNN: ... AC coverage map:` comment
+> blocks at the top of the test file AND near the top of every implementation file. The
+> union of AC IDs across implementation file headers must equal the testplan AC set
+> exactly. These are BLOCK-severity checks — missing headers guarantee gate failure.
+
+The execution brief should include `gate_requirements.coverage_map_headers: required` so
+the implementer can read this requirement structurally.
 
 Expected return block:
 
@@ -235,10 +289,39 @@ same case count do not need a revert/approve cycle.
 
 ## Step 5: Gate phase
 
+### Coordinator pre-flight checks
+
+Before invoking the gate agent, the coordinator runs these local checks to catch obvious
+failures without burning a full subagent invocation:
+
+1. **Testplan baseline match**: Read `{testplan-path}` from disk. Count test-name rows
+   in the body tables. Verify the count matches `**Plan baseline**`. If not, fix the
+   testplan or return to the implementer — do not invoke the gate.
+2. **Test file coverage map exists**: Read the first 50 lines of each file in
+   `coverage_targets.test_files`. Verify each begins with
+   `// FEAT-NNN: ... AC coverage map:`. If missing, add the header before invoking the
+   gate.
+3. **Implementation file coverage maps exist**: Read the first 10 lines of each file in
+   `coverage_targets.implementation_files`. Verify each has a
+   `// FEAT-NNN: ... AC coverage map:` comment block. If missing, add the header before
+   invoking the gate.
+
+These pre-flight checks are a **subset** of the full gate/reviewer checklist. They exist
+to avoid wasting a gate cycle on known-failing preconditions.
+
+### Gate invocation
+
 Invoke the resolved `{gate-agent}` with the current execution brief, `{feature-path}`,
 `{testplan-path}`, and the resolved reference and agent paths:
 - `{reviewer-checklist-reference}` — resolved from the matched workflow entry's `references.reviewer-checklist`
 - `{reviewer-agent}` — resolved from the matched workflow entry's `reviewer`
+
+Include an explicit instruction in the gate prompt:
+
+> You MUST read `{testplan-path}` from disk and mechanically count test-name rows in
+> each AC table. Do NOT rely on the execution brief's `expected_case_count` or any
+> summary passed in this prompt. If your row count differs from the brief, the file on
+> disk is authoritative.
 
 Expected return block:
 
@@ -254,6 +337,8 @@ execution_brief:
   ...
 ```
 
+### Gate retry rules
+
 Handle the result:
 
 - `pass` or `override` -> continue to Step 6
@@ -265,6 +350,13 @@ Handle the result:
 
 Local gate failures (`PRECHECK_FAIL`) are treated the same as reviewer BLOCK failures:
 retry only when the identifier set changed in a way that shows progress.
+
+### Gate retry ceiling
+
+The coordinator must not invoke the gate more than **3 times** for a single feature. If
+the gate has not reached `PASS` after 3 attempts, halt with the latest findings and let
+the user intervene. This prevents unbounded retry loops when a gate agent repeatedly
+misreads files or hallucinates content.
 
 ## Step 6: Final status transitions
 
@@ -302,3 +394,84 @@ Never claim `Implemented` unless the status reported by the `spark-status implem
 subagent (and captured into `doc_snapshots`) is `Implemented`. If the subagent's result
 was ambiguous or did not return a status, re-read the file once — but this is the
 exception, not the rule.
+
+## Appendix: Execution brief schema
+
+The execution brief is the primary data contract between all TDD phase agents. Every
+brief must conform to this schema. Phase agents must validate `brief_schema_version` on
+input and halt on mismatch.
+
+```yaml
+brief_schema_version: 3          # required — all agents validate this
+project:
+  name: string                   # e.g. "Mockery"
+  type: string                   # e.g. "dotnet-webapi"
+  repo_root: string              # absolute path
+  project_root: string           # absolute path (usually = repo_root)
+  docs_root: string              # absolute path
+  agents_root: string            # relative to repo_root
+  skills_root: string            # relative to repo_root
+  instructions_root: string      # relative to repo_root
+feature:
+  id: string                     # e.g. "FEAT-001"
+  name: string
+  slug: string
+  path: string                   # absolute path
+  status: string                 # Approved | Implemented
+  version: string
+testplan:
+  path: string                   # absolute path
+  status: string                 # missing | Draft | Approved | Implemented
+  plan_baseline: string | null   # e.g. "8 ACs · 23 cases"
+doc_snapshots:
+  feature: object                # ac_summary, sections, status, version
+  testplan: object               # status, version, plan_baseline, ac_ids
+  architecture: object           # version, project_type, layers, conventions
+  adrs: array                    # id, title, decision_summary per ADR
+paths:
+  project_instructions: string
+  candidate_test_files: array
+  candidate_implementation_files: array
+  relevant_project_files: array
+acceptance_criteria: array       # id, text, resolved_text, status, notes
+architecture_constraints: object # layers, conventions, required_scaffolding
+adr_decisions: array             # id, title, decision, consequence
+repo_conventions: object         # test_runner, suite_command, naming, fixtures
+structural_check:
+  requires_instruction_bootstrap: boolean
+  bootstrap_needs: array
+  prerequisites_missing: array
+  deliverable_scaffold: array
+gate_requirements:               # added in schema v3
+  coverage_map_headers: string   # "required" — implementer reads this
+coverage_targets:
+  ac_ids: array
+  expected_case_count: integer | null
+  test_files: array
+  implementation_files: array
+suite_digest: object             # last_run_command, passed, failed, notable_failures
+suite_cache: object              # last_run_at, code_sha, tracked_files, result, etc.
+reviewer_gate: object            # previous_block_ids, warn_ids, delta, passed_check_ids
+notes:
+  refactor_changes: array
+  broken_refactors: array
+  adr_candidates: array
+  follow_on_tests: array
+```
+
+### Schema versioning rules
+
+- The coordinator sets `brief_schema_version: 3` when constructing the initial brief.
+- Phase agents must check `brief_schema_version` at the top of their processing. If the
+  version is missing or unrecognized, halt with:
+  > "Execution brief schema version mismatch: expected 3, got {version}. Update the
+  > coordinator or phase agent to align on the same schema version."
+- When the schema evolves, bump the version number and update this appendix. All phase
+  agents must be updated in lockstep.
+
+### Implementer output size contract
+
+The implementer agent must not attempt to return the full content of all created files in
+its response. It returns only the fenced YAML execution brief block with updated
+`suite_cache`, `coverage_targets`, and `notes`. File contents are written to disk during
+implementation — the coordinator and gate read them from disk, not from the brief.

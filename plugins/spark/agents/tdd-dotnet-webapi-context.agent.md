@@ -34,6 +34,7 @@ and `doc_snapshots` population. Do not repeat these in later phases.
 
 ## Rules
 
+- The emitted execution brief must include `brief_schema_version: 3` as a top-level field.
 - Read `{brief-reference}` (resolved from config, passed by the coordinator) before emitting the brief.
 - Load only the files needed to normalize context for later phases.
 - Summarize; do not paste raw feature, architecture, ADR, code, or test content into

@@ -12,6 +12,7 @@ Run the final traceability and quality gate without changing document status or 
 
 ## Rules
 
+- Validate that the incoming execution brief contains `brief_schema_version: 3`. If the version is missing or unrecognized, halt with: "Execution brief schema version mismatch: expected 3, got {version}."
 - Treat the execution brief as the primary context source; trust `doc_snapshots` and
   `suite_cache`.
 - Re-read on disk only when the snapshot is missing the exact detail a check needs, or

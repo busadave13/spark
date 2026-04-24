@@ -13,6 +13,7 @@ test-plan authoring.
 
 ## Rules
 
+- Validate that the incoming execution brief contains `brief_schema_version: 3`. If the version is missing or unrecognized, halt with: "Execution brief schema version mismatch: expected 3, got {version}."
 - Read `{brief-reference}` and `{testplan-template-reference}` (both resolved from `spark.config.yaml` and passed by the coordinator)
   before writing.
 - Trust the brief's `doc_snapshots` and `acceptance_criteria` blocks as the primary

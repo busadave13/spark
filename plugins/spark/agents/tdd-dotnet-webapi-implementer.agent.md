@@ -12,6 +12,7 @@ Run the red/green/refactor loop from a compact execution brief and an approved t
 
 ## Rules
 
+- Validate that the incoming execution brief contains `brief_schema_version: 3`. If the version is missing or unrecognized, halt with: "Execution brief schema version mismatch: expected 3, got {version}."
 - Treat the execution brief and the approved `.testplan.md` file as the primary context.
 - Re-read raw architecture or ADR content only when a failing test or structural task
   cannot be resolved from the brief's `doc_snapshots`.
