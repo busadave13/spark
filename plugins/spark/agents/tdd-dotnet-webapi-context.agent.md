@@ -10,19 +10,20 @@ disable-model-invocation: false
 
 Build the compact execution brief used by later TDD phases.
 
-Inputs are pre-resolved by the coordinator and should include:
+Inputs are pre-resolved by the coordinator from `spark.config.yaml` and should include:
 
 - `{repo-root}`
-- `{project-root}`
-- `{docs-root}`
+- `{project-root}` — the repository root, used for solution/project inventory discovery
+- `{docs-root}` — resolved from `spark.folders` with `{projectName}` replaced
 - `{projectName}`
 - `{feature-path}`
 - `{testplan-path}`
-- `{instructions-root}` — folder holding per-project instruction files, resolved from
-  Spark's `config.yaml` `roots:` block (default `../instructions` relative to the
-  agents folder). Do not assume `.github/instructions`.
-- `{scaffold-skill}` — the skill to invoke for synchronous instruction bootstrap,
-  resolved by the coordinator from `tdd.agents[].scaffold` (e.g. `dotnet-webapi-project`).
+- `{adr-root}` — resolved from `spark.folders.adr` with `{projectName}` replaced
+- `{testplan-root}` — resolved from `spark.folders.testplan` with `{projectName}` replaced
+- `{instructions-root}` — resolved by the coordinator from `spark.spark-tdd.roots.instructions`.
+  Do not assume `.github/instructions` or any other hardcoded path.
+- `{scaffold-skill}` — resolved by the coordinator from the matched workflow entry's `scaffold` in `spark.config.yaml`.
+- `{brief-reference}` — resolved by the coordinator from the matched workflow entry's `references.brief` in `spark.config.yaml`.
 
 When this file refers to `{projectName-lowercase}`, derive it by lowercasing
 `{projectName}`.
@@ -33,7 +34,7 @@ and `doc_snapshots` population. Do not repeat these in later phases.
 
 ## Rules
 
-- Read `references/tdd-execution-brief-template.md` before emitting the brief.
+- Read `{brief-reference}` (resolved from config, passed by the coordinator) before emitting the brief.
 - Load only the files needed to normalize context for later phases.
 - Summarize; do not paste raw feature, architecture, ADR, code, or test content into
   the brief.
@@ -65,7 +66,7 @@ Read in one parallel call:
 - `{feature-path}` - full content
 - `{docs-root}/ARCHITECTURE.md` - metadata plus only sections needed to capture
   layers, boundaries, runtime/test topology, and component conventions
-- Relevant ADRs from `{docs-root}/adr/` - title, Decision, and Consequences only;
+- Relevant ADRs from `{adr-root}` (resolved from `spark.folders.adr`, passed by the coordinator) - title, Decision, and Consequences only;
   skip ADRs that are clearly unrelated to the feature domain
 - `{instructions-root}/{projectName-lowercase}.instructions.md` if it exists
 - Project inventory around `{project-root}`:
@@ -109,8 +110,8 @@ Carry forward concise summaries rather than raw text:
 
 ## Step 4: Emit the execution brief
 
-Return a fenced YAML block that follows
-`references/tdd-execution-brief-template.md`.
+Return a fenced YAML block that follows the brief template at
+`{brief-reference}` (resolved from config, passed by the coordinator).
 
 Populate at least these fields:
 

@@ -12,13 +12,7 @@
       "name": "SPARK",
       "description": "Spec-Driven Programming and AI Runtime Kit (SPARK)",
       "version": "1.0.0",
-      "source": "./plugins/spark"
-    },
-    {
-      "name": "SPARK2",
-      "description": "Spec-Driven Programming and AI Runtime Kit (SPARK)",
-      "version": "1.0.2",
-      "source": "./plugins/SPARK2"
+      "source": "./plugins/SPARK"
     } 
   ]
 }

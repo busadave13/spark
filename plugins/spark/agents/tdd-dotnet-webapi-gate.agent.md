@@ -16,8 +16,9 @@ Run the final traceability and quality gate without changing document status or 
   `suite_cache`.
 - Re-read on disk only when the snapshot is missing the exact detail a check needs, or
   when validating live structural state on the filesystem.
-- Read `references/tdd-reviewer-checklist.md` before invoking `tdd-reviewer`.
+- Read `{reviewer-checklist-reference}` (resolved from `spark.config.yaml` and passed by the coordinator) before invoking the resolved `{reviewer-agent}`.
 - Do not invoke `spark-status` here; the coordinator owns all status transitions.
+- Do not hardcode agent names or reference paths; use the resolved values passed by the coordinator.
 - **On retry, emit a delta.** Populate `reviewer_gate.delta` with `new_blocks`,
   `resolved_blocks`, and `unchanged_blocks` relative to
   `reviewer_gate.previous_block_ids` so the coordinator can scope the next implementer
@@ -35,7 +36,7 @@ already captured in snapshots:
   detail needed for Step 2's pre-checks
 - `coverage_targets.test_files` (live file content, for precheck 2 and 3)
 - `coverage_targets.implementation_files` (live file content, for precheck 4 and 5)
-- `references/tdd-reviewer-checklist.md`
+- `{reviewer-checklist-reference}` (resolved from config, passed by the coordinator)
 - `{project-instructions}` when structural validation still matters for this feature
 
 On a retry pass (`reviewer_gate.previous_block_ids` is non-empty), additionally skip
@@ -44,7 +45,7 @@ re-reading any files that contributed only to checks already listed in
 
 ## Step 2: Local pre-checks
 
-Before invoking `tdd-reviewer`, verify:
+Before invoking the resolved reviewer agent, verify:
 
 1. every AC in the testplan has at least one passing test
 2. the live passing-test count matches `**Plan baseline**`
@@ -54,7 +55,7 @@ Before invoking `tdd-reviewer`, verify:
 6. every required `deliverable_scaffold` item from the execution brief now exists and is
    wired consistently enough for runtime and tests
 
-If any of these fail, stop before `tdd-reviewer` and emit:
+If any of these fail, stop before the reviewer and emit:
 
 ```yaml
 phase: gate
@@ -71,9 +72,9 @@ execution_brief:
 
 Use only the local IDs that actually failed.
 
-## Step 3: Invoke `tdd-reviewer`
+## Step 3: Invoke the resolved reviewer agent
 
-When the local pre-checks pass, invoke `tdd-reviewer` via `runSubagent`.
+When the local pre-checks pass, invoke `{reviewer-agent}` (resolved from config, passed by the coordinator) via `runSubagent`.
 
 Preferred prompt shape:
 
@@ -81,6 +82,7 @@ Preferred prompt shape:
   re-running the suite when `code_sha` still matches)
 - pass `{docs-root}`
 - pass the target feature filename
+- pass `{reviewer-checklist-reference}` so the reviewer can locate the checklist
 - if this is a retry, pass `reviewer_gate.previous_block_ids` and
   `reviewer_gate.passed_check_ids` so the reviewer can narrow its focus
 

@@ -13,7 +13,7 @@ test-plan authoring.
 
 ## Rules
 
-- Read `references/tdd-execution-brief-template.md` and `references/testplan-template.md`
+- Read `{brief-reference}` and `{testplan-template-reference}` (both resolved from `spark.config.yaml` and passed by the coordinator)
   before writing.
 - Trust the brief's `doc_snapshots` and `acceptance_criteria` blocks as the primary
   context source. Re-read the feature spec only when **writing** to it in Step 3.
@@ -25,7 +25,7 @@ test-plan authoring.
 Read in one call:
 
 - the current execution brief
-- `references/testplan-template.md`
+- `{testplan-template-reference}` (resolved from config, passed by the coordinator)
 
 Use `doc_snapshots.feature` and `acceptance_criteria` from the brief as the feature
 source of truth. Only re-read `{feature-path}` directly in Step 3 when rewriting AC
@@ -82,11 +82,11 @@ Before writing the file, render the full test-plan report in the conversation so
 user can see what is about to be written. This is not a manual approval gate; proceed
 straight through to the file write unless the user interrupts.
 
-Write the plan to `{testplan-path}` using `references/testplan-template.md` exactly.
+Write the plan to `{testplan-path}` using `{testplan-template-reference}` exactly.
 
 Requirements:
 
-- create `{docs-root}/testplan/` if needed
+- create `{testplan-root}/` if needed (using the resolved testplan folder path from `spark.folders`)
 - set `**Status**` to `Draft`
 - set `**Plan baseline**` to `{N} ACs · {N} cases`
 - overwrite the file in full

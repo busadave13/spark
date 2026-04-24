@@ -9,13 +9,13 @@ disable-model-invocation: false
 # TDD Reviewer
 
 Validate test suites for one or more `FEAT-NNN-*.md` feature specs using the shared
-checklist in `references/tdd-reviewer-checklist.md`.
+checklist at `{reviewer-checklist-reference}` (resolved from config, passed by the caller).
 
 This agent is read-only. It never edits files.
 
 ## Rules
 
-- Always read `references/tdd-reviewer-checklist.md` before running checks.
+- Always read `{reviewer-checklist-reference}` (resolved from config, passed by the caller) before running checks.
 - Prefer a compact execution brief when the caller provides one. Use it to avoid
   rediscovering feature metadata, AC inventory, and candidate file paths.
 - When no execution brief is provided, fall back to project or feature discovery.
@@ -26,7 +26,7 @@ This agent is read-only. It never edits files.
 Supported inputs:
 
 - execution brief from the resolved TDD coordinator
-- project name, `.specs/` path, or `feature/` directory
+- project name, `{docs-root}` path (resolved from `spark.folders`), or `feature/` directory
 - specific `FEAT-NNN-*.md` path
 
 If an execution brief is present:
@@ -37,14 +37,14 @@ If an execution brief is present:
 
 If no execution brief is present:
 
-1. resolve `{docs-root}` from the supplied project or file path
+1. resolve `{docs-root}` from the supplied project or file path (do not hardcode `.specs/` paths)
 2. load the target `FEAT-NNN-*.md` files
-3. locate matching `.testplan.md` files under `{docs-root}/testplan/`
+3. locate matching `.testplan.md` files under the resolved testplan folder
 4. locate test files and relevant implementation files
 
 Read in one parallel call:
 
-- `references/tdd-reviewer-checklist.md`
+- `{reviewer-checklist-reference}` (resolved from config, passed by the caller)
 - target feature metadata plus Acceptance Criteria
 - target `.testplan.md` files
 - matching test files
@@ -75,7 +75,7 @@ continue with static checks.
 
 ## Step 3: Apply the checklist
 
-Use `references/tdd-reviewer-checklist.md` as the normative source for:
+Use `{reviewer-checklist-reference}` as the normative source for:
 
 - check IDs
 - FAIL conditions
@@ -124,7 +124,7 @@ Required shape:
 
 ```json
 {
-  "reviewer": "tdd-reviewer",
+  "reviewer": "tdd-reviewer",  // use the actual resolved reviewer agent name
   "features_reviewed": ["FEAT-003-password-reset"],
   "counts": { "block": 0, "warn": 2, "info": 0 },
   "findings": [

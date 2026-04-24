@@ -1,38 +1,78 @@
 ---
 name: comments-editor
-description: "Read/write agent that resolves inline review comments for any Spark document. Reads a {docname}.comments.json sidecar file, applies each comment's instructions directly to the target document (PRD.md, ARCHITECTURE.md, feature specs, ADRs, etc.), then deletes the sidecar once all comments are resolved. Requires a document path as input; does not scan folders for arbitrary .comments.json files."
+description: "Read/write agent that resolves inline review comments for any Spark document. Receives spec type, project name, and resolved folder paths from the Spark orchestrator. Discovers the correct .comments.json sidecar by deriving the document path from the spec type and folder paths. Applies each comment's instructions to the target document, deletes the sidecar, and returns a structured summary of resolved, approximated, and skipped comments."
 tools: [read, edit, search, todo]
 user-invocable: false
 ---
 
 # Comments Resolver
 
-Reads a `{docname}.comments.json` sidecar file, applies each comment's instructions to the
-target document, then deletes the sidecar file once all comments are resolved.
+Discovers `.comments.json` sidecar files for a given spec type and project, applies each
+comment's instructions to the target document, deletes the sidecar, and returns a structured
+resolution summary.
 
 ---
 
-## Step 1: Resolve paths
+## Step 1: Resolve inputs and discover sidecar
 
-This agent **requires a document path** as input (e.g. `.specs/Mockery/PRD.md`,
-`ARCHITECTURE.md`, `spec.md`). If the user invokes the agent without naming a document, ask
-them which document's comments they want to resolve before proceeding. Do not guess, and do
-not scan folders for arbitrary `*.comments.json` files — the document is the anchor.
+### 1a — Accept orchestrator-provided parameters
 
-From the document path, derive the sidecar path by replacing the extension with
-`.comments.json` — e.g. `PRD.md` → `PRD.comments.json` in the same directory.
+When invoked by the Spark orchestrator, this agent receives the following input parameters:
 
-Verify both files exist before proceeding:
-- If the **document** does not exist, tell the user and stop.
-- If the **`.comments.json` sidecar** does not exist, tell the user there are no pending
-  comments for that document and stop. Only the sidecar belonging to the specified document
-  is in scope — do not look elsewhere.
+| Parameter | Description | Example |
+|---|---|---|
+| `{spec-type}` | Document type: `prd`, `architecture`, `adr`, `feature` | `prd` |
+| `{project-name}` | Project name | `Mockery` |
+| `{docs-root}` | Resolved project spec root | `.specs/Mockery` |
+| `{specs-root}` | Resolved specs root | `.specs` |
+| `{adr-root}` | Resolved ADR folder (only when `{spec-type}` is `adr`) | `.specs/Mockery/adr` |
+| `{feature-root}` | Resolved feature folder (only when `{spec-type}` is `feature`) | `.specs/Mockery/feature` |
+| `{target-doc}` | (Optional) Specific document filename when the user targets a single document | `FEAT-002-auth.md` |
+
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode
+`.specs` folder names. If any required parameter is missing and no document path was provided
+for direct invocation, ask the orchestrator/user before proceeding.
+
+### 1b — Discover the target document and sidecar
+
+Derive the document path and search for the matching `.comments.json` sidecar based on
+`{spec-type}` and the resolved folder paths:
+
+| Spec type | Document path | Sidecar search |
+|---|---|---|
+| `prd` | `{docs-root}/PRD.md` | `{docs-root}/PRD.comments.json` |
+| `architecture` | `{docs-root}/ARCHITECTURE.md` | `{docs-root}/ARCHITECTURE.comments.json` |
+| `adr` | `{adr-root}/ADR-*.md` | Search `{adr-root}/` for `ADR-*.comments.json` |
+| `feature` | `{feature-root}/FEAT-*.md` | Search `{feature-root}/` for `FEAT-*.comments.json` |
+
+**Discovery rules:**
+
+1. For `prd` and `architecture`: derive the single expected document and sidecar path directly.
+2. For `adr` and `feature`: if `{target-doc}` is provided, resolve only that document's sidecar
+   (e.g. `{target-doc}` = `FEAT-002-auth.md` → look for `FEAT-002-auth.comments.json` in
+   `{feature-root}`). If `{target-doc}` is not provided, search the appropriate subfolder for
+   all `*.comments.json` files matching the pattern.
+3. If **multiple** `.comments.json` files are found (and no `{target-doc}` was specified),
+   list them and process each in sequence. For each sidecar, derive the target document from
+   the sidecar's `doc` field as the source of truth; use the sidecar filename as a fallback
+   if `doc` is absent. Report any mismatch between `doc` and filename.
+4. If **no** `.comments.json` is found, report that there are no pending comments for the
+   given spec type and project, and stop.
+5. If the **document** referenced by a sidecar does not exist, report it and skip that sidecar.
+
+### 1c — Fallback for direct invocation
+
+If invoked directly (not via the orchestrator) **with an explicit document path** instead of
+orchestrator parameters, fall back to legacy behavior: use the document path as the anchor,
+derive the sidecar path by replacing the extension with `.comments.json`, and verify both
+files exist before proceeding. This fallback applies only when a document path is provided
+and **none** of the orchestrator parameters (`{spec-type}`, `{docs-root}`) are present.
 
 ---
 
-## Step 2: Load both files
+## Step 2: Load document and sidecar
 
-Read in a single parallel call:
+For each discovered document + sidecar pair, read both in a single parallel call:
 - The target document (full content)
 - The `.comments.json` sidecar
 
@@ -118,20 +158,40 @@ rewrite surrounding content that was not targeted.
 
 ## Step 4: Report and clean up
 
-After processing all comments, report the outcome:
+After processing all comments for a document:
+
+- If **all comments were resolved** (or approximated), delete the `.comments.json` sidecar
+  immediately — do not ask the user for confirmation.
+- If **some comments were skipped**, rewrite the `.comments.json` sidecar to contain only the
+  skipped comments (preserving their original structure) so they are not lost. Report the
+  skipped comments in the summary.
+- If **all comments were skipped**, leave the sidecar unchanged.
+
+### Structured resolution summary
+
+Return a structured summary for each document processed. This summary is returned to the
+orchestrator for relay to the user.
 
 ```
-Resolved N of N comments in {doc}:
-✅ Comment {id-short}: "{selectedText}" — {brief description of change}
-⚠️  Comment {id-short}: "{selectedText}" — could not locate passage; skipped
+## Comment Resolution Summary
+
+**Document**: {document-path}
+**Spec Type**: {spec-type}
+**Project**: {project-name}
+
+| Status | Comment ID | Selected Text | Resolution |
+|---|---|---|---|
+| ✅ Resolved | {id-short} | "{selectedText}" | {brief description of change} |
+| ⚠️ Approximated | {id-short} | "{selectedText}" | {description + approximation note} |
+| ❌ Skipped | {id-short} | "{selectedText}" | {reason passage could not be located} |
+
+**Totals**: N resolved, N approximated, N skipped of N total
+**Sidecar**: Deleted / Rewritten with N remaining comments / Unchanged
+**Version bumped**: X.Y → X.Z
 ```
 
-If any comments were skipped, describe what was attempted and ask the user how to handle them.
-
-Once all resolvable comments have been applied, **always delete the `.comments.json` file
-immediately** — do not ask the user for confirmation. Delete it even if some comments were
-skipped; the remaining unresolved ones should be communicated to the user verbally so they
-can decide what to do next.
+If multiple documents were processed (e.g. multiple ADRs), return one summary block per
+document.
 
 ---
 
@@ -154,10 +214,15 @@ If **no comments were applied** (all were skipped or the array was empty), do no
 
 - **Empty `comments` array**: tell the user there are no comments to resolve and delete the
   sidecar file.
-- **Other `.comments.json` files in the same folder**: ignore them. Only the sidecar that
-  matches the document passed in is in scope. If the user wants a different document's
-  comments resolved, they should invoke the agent again with that document path.
+- **Multiple sidecars for same spec type** (ADR/feature): process each in sequence. Return
+  a separate summary block for each document.
+- **Single-doc targeting** (`{target-doc}` provided): resolve only that document's sidecar.
+  Ignore other sidecars in the same folder.
 - **Instruction would delete an entire section**: confirm with the user before removing a
   major document section, as this is a large structural change.
 - **Ambiguous instruction**: apply the most sensible interpretation given the surrounding
   document context and note the interpretation in your report.
+- **Sidecar references a missing document**: skip that sidecar, report the missing document
+  in the summary, and continue with remaining sidecars.
+- **Sidecar `doc` field and filename disagree**: treat the `doc` field as the source of truth.
+  Use the filename as fallback only if `doc` is absent. Report the mismatch in the summary.

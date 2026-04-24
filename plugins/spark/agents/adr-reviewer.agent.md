@@ -1,6 +1,6 @@
 ---
 name: adr-reviewer
-description: Read-only reviewer for ADR files. Looks for ADRs in projects within {repo-root}/.specs/{projectName}/. Validates each ADR against the spark ADR template by running deterministic structural checks (D01–D11) per file, then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the ADRs", "check an ADR", "validate ADR-0001", or "find issues in the decision records".
+description: Read-only reviewer for ADR files. Validates each ADR against the spark ADR template by running deterministic structural checks (D01–D11) per file, then reports findings by severity. Does not modify or fix files — output only. Receives resolved folder paths from the Spark orchestrator. Use whenever a user asks to "review the ADRs", "check an ADR", "validate ADR-0001", or "find issues in the decision records".
 tools: [read, search, todo]
 user-invocable: false
 ---
@@ -16,11 +16,11 @@ This skill reviews ADR files only. To review `ARCHITECTURE.md`, use `architectur
 
 ## Step 1: Resolve path and collect ADR files
 
-The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
 
 - If `{docs-root}` was provided as input (e.g., by the Spark orchestrator), use it as-is.
-- If a project name is provided (e.g., `Mockery`), run `git rev-parse --show-toplevel` to find `{repo-root}`, then set `{docs-root}` = `{repo-root}/.specs/{projectName}/`.
-- If a full path to a `.specs/` folder is provided, use it directly.
+- If a project name is provided (e.g., `Mockery`), use the provided `{docs-root}` folder path or ask the user for the ADR folder location.
+- If a full path to a project specification folder is provided, use it directly.
 - If the path is a specific `ADR-*.md` file, review that single file.
 - If the path points to an `adr/` directory, review all `ADR-*.md` files within it.
 - If no path is given, ask the user which project to review.

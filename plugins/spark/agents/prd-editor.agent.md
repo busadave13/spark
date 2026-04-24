@@ -1,6 +1,6 @@
 ---
 name: prd-editor
-description: "Read/write agent that creates or updates PRD.md — the foundational product requirements document for a Spark project. Reads existing PRD.md and project context, then writes or updates {docs-root}/PRD.md. Projects live in {repo-root}/.specs/{projectName}/. Accepts a project name, .specs/ path, or existing PRD.md path."
+description: "Read/write agent that creates or updates PRD.md — the foundational product requirements document for a Spark project. Reads existing PRD.md and project context, then writes or updates {docs-root}/PRD.md. Receives resolved folder paths and reference-file paths from the Spark orchestrator. Accepts a project name or existing PRD.md path."
 tools: [read, edit, search, web, todo]
 user-invocable: false
 ---
@@ -13,7 +13,7 @@ what is being built, for whom, and why.
 ## Usage examples
 
 - "Create a PRD for Mockery"
-- "Update PRD.md at src/services/.specs/Mockery/PRD.md"
+- "Update PRD.md for the Mockery project"
 - "Review the PRD in the Mockery project"
 
 ## Execution guidelines
@@ -26,12 +26,12 @@ what is being built, for whom, and why.
 
 ## Step 1: Resolve project name and docs root
 
-The `.specs/` folder is always at the repo root: `{repo-root}/.specs/{projectName}/`. Do not search subdirectories, CWD, or any other location.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
 2. **Determine `{projectName}`** — extract the project name from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
-3. **Resolve `{docs-root}`**: Set `{docs-root}` = `{repo-root}/.specs/{projectName}/`. If the folder does not exist, create it.
-4. Set `{docs-root}` = the resolved `.specs/{projectName}` folder.
+3. **Resolve `{docs-root}`**: If not provided by the orchestrator, ask the user for the project specification folder path. If the folder does not exist, create it.
+4. Set `{docs-root}` = the resolved project specification folder.
 
 If the user asks to review the PRD, skip the interview (Step 2), skip generation (Step 3), and go directly to the PRD review flow (Step 3a).
 
@@ -76,13 +76,13 @@ questions into a single user prompt.
 
 ## Step 3.0: Load reference files (required — abort on miss)
 
-Before generating or reviewing, load the two references below in a single parallel call. Read them directly — **do NOT use subagents**. Paths are relative to this agent file (`{agents-root}/references/`); they resolve correctly regardless of whether the agents live in `.github/agents/` or `.copilot/agents/`.
+Before generating or reviewing, load the two references below in a single parallel call. Read them directly — **do NOT use subagents**. These paths are passed in by the Spark orchestrator from `spark.config.yaml`.
 
-- `references/prd-template.md` — the authoritative template; follow its structure exactly
-- `references/prd-section-guide.md` — detailed guidance for each section; consult for quality and anti-patterns
+- `{template-path}` — the authoritative PRD template; follow its structure exactly
+- `{guide-path}` — detailed guidance for each section; consult for quality and anti-patterns
 
-If either file is missing, stop and surface:
-> "⛔ PRD references missing at `{agents-root}/references/`. Check the Spark install."
+If either path is missing or unreadable, stop and surface:
+> "⛔ PRD reference paths were not provided or could not be read. Check the Spark orchestrator handoff and `spark.config.yaml`."
 
 Do not proceed to Step 3 or Step 3a without both references loaded.
 
@@ -110,7 +110,7 @@ Keep it concise. A bloated PRD nobody reads is worse than a short one with gaps 
 
 ### Generation rules
 
-Follow `references/prd-template.md` precisely — do not change section order or headings.
+Follow `{template-path}` precisely — do not change section order or headings.
 Replace every `{placeholder}` with real content. If a section is not applicable, write
 `N/A` with a one-line reason; do not remove sections.
 
@@ -199,7 +199,7 @@ Before finishing, verify:
 
 ## Step 3a: Review PRD
 
-This step runs only when the user explicitly asks to review the PRD. It validates the existing `PRD.md` against the template and section guide without rewriting it.
+This step runs only when the user explicitly asks to review the PRD. It validates the existing `PRD.md` against `{template-path}` and `{guide-path}` without rewriting it.
 
 The references required for this step are loaded by Step 3.0. Re-use them from context — do not re-read here.
 
@@ -209,7 +209,7 @@ Do not bump the version here — Step 4 handles the single version bump after al
 
 ### Review checks
 
-Compare the PRD against the template and section guide. Check for:
+Compare the PRD against `{template-path}` and `{guide-path}`. Check for:
 
 1. **Missing sections** — every numbered section (1–12) and the header block must be present.
 2. **Empty or placeholder sections** — sections that contain only template placeholders (`{...}`) or are blank.
@@ -255,7 +255,7 @@ After applying fixes, proceed to Step 4. Do not bump the version here — Step 4
 
 If the user answers "none", proceed to Step 4.
 
-If no inconsistencies are found, tell the user the PRD is consistent with the template and section guide, then proceed to Step 4.
+If no inconsistencies are found, tell the user the PRD is consistent with the provided template and guide, then proceed to Step 4.
 
 ---
 

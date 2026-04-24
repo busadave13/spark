@@ -20,7 +20,7 @@ Accept a path to `ARCHITECTURE.md` or a docs root directory.
 
 - If the path ends with `ARCHITECTURE.md`, that file is `{arch-path}` and `{docs-root}` is its parent directory.
 - If the path is a directory, `{docs-root}` = that directory and `{arch-path}` = `{docs-root}/ARCHITECTURE.md`.
-- If no path is given, ask the user which project to review, then resolve `{docs-root}` = `{repo-root}/.specs/{projectName}/` and `{arch-path}` = `{docs-root}/ARCHITECTURE.md`.
+- If no path is given, ask the user which project to review, then use the provided `{docs-root}` folder path or ask the user for the ARCHITECTURE.md location. Set `{arch-path}` = `{docs-root}/ARCHITECTURE.md`.
 
 In a single parallel call, read:
 - `{arch-path}` in full
