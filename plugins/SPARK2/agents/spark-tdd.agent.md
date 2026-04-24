@@ -2,8 +2,7 @@
 name: SPARK TDD
 description: "Coordinator agent for dotnet-webapi feature implementation. Orchestrates context, planning, implementation, and gate subagents with a compact execution brief so each phase loads only the context it needs. Reads Approved feature specs, writes testplan/tests/code, invokes the resolved reviewer, and finalizes status transitions through spark-status."
 tools: [execute, read, agent, edit, search, todo]
-user-invocable: false
-disable-model-invocation: false
+user-invocable: true
 ---
 
 # TDD .NET WebAPI Coordinator
