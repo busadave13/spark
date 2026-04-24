@@ -61,3 +61,17 @@ spark:
           brief: references/tdd-execution-brief-template.md
           testplan-template: references/testplan-template.md
           reviewer-checklist: references/tdd-reviewer-checklist.md
+  spark-aspire:
+    enabled: true
+    roots:
+      source: src
+    naming:
+      apphost: AppHost
+      service-defaults: ServiceDefaults
+    skills:
+      - name: aspire
+    references:
+      skill: skills/aspire/SKILL.md
+      architecture: skills/aspire/references/architecture.md
+      cli-reference: skills/aspire/references/cli-reference.md
+      testing: skills/aspire/references/testing.md

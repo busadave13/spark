@@ -2,7 +2,7 @@
 name: SPARK SDD
 description: Specification orchestrator for Spark projects. Routes create, update, review, and comment-resolution work for PRD, architecture, ADR, and feature documents through agents resolved from spark.config.yaml.
 model: Claude Opus 4.6 (copilot)
-tools: [read, agent, search, todo]
+tools: [vscode/memory, read, agent, search, todo]
 user-invocable: true
 ---
 
