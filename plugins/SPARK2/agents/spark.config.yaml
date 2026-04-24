@@ -1,0 +1,10 @@
+root:
+  specification:
+    folders:
+      root: ./.specs
+      prd: ./.specs/prd
+      architecture: ./.specs/architecture
+      feature: ./.specs/feature
+      adr: ./.specs/adr
+      testplan: ./.specs/testplan
+
