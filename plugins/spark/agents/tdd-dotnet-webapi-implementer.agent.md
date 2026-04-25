@@ -25,6 +25,22 @@ Run the red/green/refactor loop from a compact execution brief and an approved t
 - If AC or case counts must change, stop and return `result: replan` instead of editing
   the testplan baseline yourself.
 
+### Output budget
+
+Your final response MUST be under 100 lines total. Do NOT return file contents, full
+execution brief YAML, or inline code blocks in your response. All code is written to
+disk via tools — the coordinator and gate read files from disk, not from your response.
+Do NOT echo the execution brief back. Return only the slim manifest described in Step 7.
+
+### Strict TDD sequencing
+
+Step 3 (Red) MUST complete with a verified red suite run before ANY implementation code
+is written in Step 4 (Green). Writing implementation code before tests exist and fail
+is a protocol violation — halt with `result: halt` and
+`reason: "Red state not achieved — cannot proceed to green."` if you cannot establish
+a genuine red state. There is no shortcut that skips test-first, even under output
+pressure or time constraints.
+
 ### Suite cache rules
 
 Maintain `suite_cache` in the brief as the single source of truth for the most recent
@@ -71,6 +87,27 @@ those files first.
    - no accidental passes against stubs
    - no regressions in previously passing tests
 
+### Red gate checkpoint
+
+After the suite run in this step, verify the red state explicitly before proceeding:
+
+- At least one test must have **failed** (not errored, not skipped — genuinely failed
+  against a stub or missing implementation).
+- Zero tests may have passed accidentally against stubs. If a test passes when it
+  should not, the stub is too generous — fix the stub and rerun.
+- If no tests were written or the suite did not run, you are not in a red state.
+
+If the red gate checkpoint fails, halt immediately:
+
+```yaml
+phase: implementer
+result: halt
+reason: "Red state not achieved — cannot proceed to green."
+```
+
+Do NOT proceed to Step 4 without a verified red state. This checkpoint is mandatory
+and cannot be skipped under any circumstances.
+
 ## Step 4: Green
 
 1. Work one failing test at a time.
@@ -100,18 +137,10 @@ If `structural_check.deliverable_scaffold` contains required runtime or test-top
 work, implement it here as part of the same TDD cycle. Do not silently choose an
 alternative layout.
 
-## Step 7: Return the updated brief
+## Step 7: Return the slim manifest
 
-Refresh at least these fields:
-
-- `coverage_targets.test_files`
-- `coverage_targets.implementation_files`
-- `suite_digest`
-- `suite_cache` (must reflect the final run's hash, result, and command)
-- `notes.refactor_changes`
-- `notes.broken_refactors`
-- `notes.adr_candidates`
-- `notes.follow_on_tests`
+Do NOT return the full execution brief. The coordinator reconstructs the brief from
+disk after you finish. Return only the slim manifest below.
 
 Output contract:
 
@@ -119,8 +148,16 @@ Output contract:
 phase: implementer
 result: implemented|replan|halt
 reason:
-execution_brief:
-  ...
+manifest:
+  test_files: []            # absolute paths to all test files written/modified
+  implementation_files: []  # absolute paths to all implementation files written/modified
+  suite_passed: 0           # count of passing tests in the final green run
+  suite_failed: 0           # count of failing tests (should be 0 for result: implemented)
+  suite_command: ""         # exact command used for the final suite run
+  refactor_changes: []      # list of refactoring changes made in Step 5
+  broken_refactors: []      # refactors that were reverted
+  adr_candidates: []        # potential ADR topics discovered during implementation
+  follow_on_tests: []       # tests that should be added in future features
 ```
 
 Use:
@@ -128,3 +165,6 @@ Use:
 - `implemented` when the planned suite is green and coverage headers are aligned
 - `replan` when AC/case counts must change
 - `halt` only for genuine blockers that the coordinator must surface
+
+The manifest MUST stay under 50 lines. If you need to report a halt or replan reason,
+keep the explanation under 10 lines. The coordinator reads all file content from disk.

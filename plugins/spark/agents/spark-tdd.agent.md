@@ -249,9 +249,33 @@ proceeding.
 ### Implementer fallback
 
 If the implementer agent returns an error (e.g. response length limit exceeded) or no
-response, the coordinator should attempt the implementation directly using the brief and
-testplan, following the same red-green-refactor protocol the implementer agent would use.
+response, the coordinator implements the feature directly using the brief and testplan.
 This is a fallback, not the preferred path — always try the resolved agent first.
+
+**The fallback MUST follow strict two-pass TDD. Skipping the red phase is a protocol
+violation even in fallback mode.**
+
+#### Fallback pass 1: Red
+
+1. Write ONLY test stubs, fake/mock helpers, and failing test methods. Do not write
+   any production implementation code in this pass.
+2. Create minimal importable stubs (empty classes, `NotImplementedException` throws)
+   so the test project compiles.
+3. Run the full suite and verify a genuine red state — at least one test must fail
+   against a stub, zero tests may pass accidentally.
+4. If the red state cannot be achieved, halt. Do not proceed to pass 2.
+
+#### Fallback pass 2: Green
+
+1. Work one failing test at a time. Write the minimum implementation code that makes
+   the current target test pass.
+2. Run the suite after each implementation change.
+3. Continue until all planned tests are green.
+4. Perform any in-scope refactoring (Step 5 of the implementer protocol).
+
+The coordinator MUST NOT write implementation code and tests in the same pass. Tests
+first, verified red, then implementation. There is no shortcut that combines both
+passes into one, even when the feature is small or the coordinator has full context.
 
 ### Coverage map header reminder
 
@@ -270,9 +294,39 @@ Expected return block:
 ```yaml
 phase: implementer
 result: implemented|replan|halt
-execution_brief:
-  ...
+reason:
+manifest:
+  test_files: []
+  implementation_files: []
+  suite_passed: 0
+  suite_failed: 0
+  suite_command: ""
+  refactor_changes: []
+  broken_refactors: []
+  adr_candidates: []
+  follow_on_tests: []
 ```
+
+### Post-implementer brief reconstruction
+
+The implementer returns a slim manifest, not the full execution brief. After the
+implementer completes with `result: implemented`, the coordinator reconstructs the
+brief's mutable fields from the manifest and disk:
+
+1. Set `coverage_targets.test_files` = `manifest.test_files`
+2. Set `coverage_targets.implementation_files` = `manifest.implementation_files`
+3. Set `suite_digest.passed` = `manifest.suite_passed`
+4. Set `suite_digest.failed` = `manifest.suite_failed`
+5. Set `suite_digest.last_run_command` = `manifest.suite_command`
+6. Set `suite_cache.run_command` = `manifest.suite_command`
+7. Set `suite_cache.result` = `pass` if `manifest.suite_failed == 0`, else `fail`
+8. Set `suite_cache.last_run_at` to current timestamp
+9. Set `suite_cache.tracked_files` = union of `manifest.test_files` and
+   `manifest.implementation_files`
+10. Copy `manifest.refactor_changes`, `manifest.broken_refactors`,
+    `manifest.adr_candidates`, and `manifest.follow_on_tests` into `notes`
+
+For `result: replan` or `result: halt`, skip reconstruction and handle as before.
 
 Handle the result:
 
@@ -463,9 +517,20 @@ notes:
 - When the schema evolves, bump the version number and update this appendix. All phase
   agents must be updated in lockstep.
 
-### Implementer output size contract
+### Implementer return contract
 
-The implementer agent must not attempt to return the full content of all created files in
-its response. It returns only the fenced YAML execution brief block with updated
-`suite_cache`, `coverage_targets`, and `notes`. File contents are written to disk during
-implementation — the coordinator and gate read them from disk, not from the brief.
+The implementer agent returns a slim manifest (under 50 lines), not the full execution
+brief. This eliminates the output size pressure that caused response-limit failures.
+
+The manifest contains:
+- `test_files` and `implementation_files` — absolute paths of all files written
+- `suite_passed`, `suite_failed`, `suite_command` — final suite run results
+- `refactor_changes`, `broken_refactors`, `adr_candidates`, `follow_on_tests` — notes
+
+The coordinator reconstructs `suite_cache`, `suite_digest`, `coverage_targets`, and
+`notes` from the manifest plus disk reads (see *Post-implementer brief reconstruction*
+in Step 4). The gate and reviewer consume the reconstructed brief, not the implementer's
+raw output.
+
+File contents are written to disk during implementation. The coordinator, gate, and
+reviewer read them from disk — never from the implementer's response.
