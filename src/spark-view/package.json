@@ -2,7 +2,7 @@
   "name": "spark-view",
   "displayName": "SparkView",
   "description": "Inline feedback and comments on markdown files stored in Git",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "publisher": "busa-dave-13",
   "license": "MIT",
   "icon": "media/spark-view-icon.png",
@@ -146,19 +146,24 @@
     "@types/node": "^20.10.0",
     "@types/uuid": "^9.0.7",
     "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.13.0",
-    "@typescript-eslint/parser": "^6.13.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
     "@vscode/test-electron": "^2.3.8",
     "@vscode/vsce": "^2.22.0",
     "esbuild": "^0.28.0",
     "eslint": "^8.55.0",
     "glob": "^10.3.10",
-    "mocha": "^10.2.0",
+    "mocha": "^11.7.5",
     "typescript": "5.3.3"
   },
   "dependencies": {
     "markdown-it": "^14.1.1",
     "simple-git": "^3.21.0",
-    "uuid": "^9.0.1"
+    "uuid": "^14.0.0"
+  },
+  "overrides": {
+    "serialize-javascript": "^7.0.5",
+    "diff": "^8.0.3",
+    "uuid": "$uuid"
   }
 }

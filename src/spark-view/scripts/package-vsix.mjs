@@ -14,10 +14,9 @@ for (const entry of readdirSync(outputDir, { withFileTypes: true })) {
   }
 }
 
-const vsceExecutable = process.platform === 'win32' ? 'vsce.cmd' : 'vsce';
-const result = spawnSync(vsceExecutable, ['package', '--out', outputPath], {
+const result = spawnSync('npx', ['@vscode/vsce', 'package', '--out', outputPath], {
   stdio: 'inherit',
-  shell: process.platform === 'win32',
+  shell: true,
 });
 
 if (result.error) {
