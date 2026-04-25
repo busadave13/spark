@@ -2,18 +2,19 @@
 
 # Architecture - Weather Service
 
-> **Version**: 1.0<br>
+> **Version**: 1.1<br>
 > **Created**: 2026-04-20<br>
-> **Last Updated**: 2026-04-21<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Namespace**: Test<br>
 > **Project**: Weather<br>
 > **Project Type**: dotnet-webapi<br>
-> **Status**: Approved
+> **Status**: Draft
+> **Type**: Architecture<br>
 
 ---
 
-> Weather Service is a development-time ASP.NET Core weather aggregation API for internal services and test automation running on local workstations or cloud dev environments. It returns one regional weather response by composing deterministic temperature, humidity, and pressure readings from sibling upstream test services behind a single stable contract. The architecture stays intentionally small: one .NET Minimal API validates region input, calls the required upstream services through typed HTTP clients, and fails clearly when any required upstream input is unavailable or invalid.
+> Weather Service is a development-time weather aggregation API for internal services and test automation running on local workstations or cloud dev environments. It returns one regional weather response by composing deterministic temperature, humidity, and pressure readings from sibling upstream test services behind a single stable contract. The architecture stays intentionally small: one HTTP endpoint validates region input, calls the required upstream services through typed HTTP clients, and fails clearly when any required upstream input is unavailable or invalid.
 
 ---
 
@@ -22,7 +23,7 @@
 1. **Aggregation stays at one boundary** - callers should make one HTTP request to Weather Service and never coordinate Temperature Sensor and Pressure Sensor calls directly in v1.
 2. **No partial success for required data** - the service returns success only when temperature, humidity, and pressure are all available and valid for the requested region.
 3. **Explicit upstream boundaries** - integration with sibling services happens through typed HTTP clients and versioned response contracts rather than shared files, shared databases, or in-process coupling.
-4. **Repository-aligned minimal hosting** - the service follows the repo's .NET Minimal API pattern so transport, orchestration, and infrastructure concerns remain easy to reason about and test.
+4. **Repository-aligned minimal hosting** - the service follows the repo's established Minimal API hosting pattern (chosen to match the sibling Temperature Sensor and Pressure Sensor projects that already use this style) so transport, orchestration, and infrastructure concerns remain easy to reason about and test.
 
 ---
 
@@ -179,9 +180,9 @@ Config is loaded in this order (later entries win):
 
 ## Observability
 
-- **Logging**: Structured application logs via `ILogger`; `Information` for successful lookups and startup events, `Warning` for unsupported regions and upstream misses, and `Error` for invalid upstream contracts, timeouts, and unhandled exceptions.
+- **Logging**: Structured application logs via the framework's built-in `ILogger` abstraction (used because it is the default logging contract in the host and requires no additional dependencies); `Information` for successful lookups and startup events, `Warning` for unsupported regions and upstream misses, and `Error` for invalid upstream contracts, timeouts, and unhandled exceptions.
 - **Metrics**: Counters for weather lookup success, validation failure, temperature dependency failure, pressure dependency failure, and a request-duration histogram for endpoint latency.
-- **Tracing**: Standard ASP.NET Core request tracing with OpenTelemetry-compatible spans around the inbound request and each downstream HTTP dependency call.
+- **Tracing**: Framework-provided request tracing with OpenTelemetry-compatible spans (chosen because sibling services already emit OpenTelemetry diagnostics, enabling correlated traces across the composed call chain) around the inbound request and each downstream HTTP dependency call.
 - **Health endpoint**: `GET /healthz` verifies process liveness, and `GET /readyz` should verify that configuration is valid and both dependency base URLs are configured.
 
 ---
@@ -197,7 +198,7 @@ Config is loaded in this order (later entries win):
 
 ### Deployment Topology
 
-The target deployment is a single ASP.NET Core host running beside Temperature Sensor Service and Pressure Sensor Service in the repo's local or cloud-dev composition environment. Weather owns only HTTP aggregation logic; it does not store weather state or replicate upstream datasets. This keeps the service aligned with [ADR-0002](./adr/ADR-0002-http-based-aggregation-over-sibling-sensor-services.md) and preserves clear service boundaries.
+The target deployment is a single host process running beside Temperature Sensor Service and Pressure Sensor Service in the repo's local or cloud-dev composition environment. Weather owns only HTTP aggregation logic; it does not store weather state or replicate upstream datasets. This keeps the service aligned with [ADR-0002](./adr/ADR-0002-http-based-aggregation-over-sibling-sensor-services.md) and preserves clear service boundaries.
 
 ```mermaid
 graph LR
@@ -215,7 +216,7 @@ graph LR
 
 ### CI/CD Pipeline
 
-- **Build**: Restore and build the Weather service and its tests with the repo's standard .NET workflow, following the approved single-host model in [ADR-0001](./adr/ADR-0001-single-minimal-api-aggregator.md).
+- **Build**: Restore and build the Weather service and its tests with the repo's standard build workflow, following the approved single-host model in [ADR-0001](./adr/ADR-0001-single-minimal-api-aggregator.md).
 - **Test**: Run unit tests for aggregation and error mapping plus integration tests that exercise composed calls against representative Temperature Sensor and Pressure Sensor responses.
 - **Deploy**: Publish only to local and cloud development targets; no production deployment path is defined for v1.
 

@@ -1,0 +1,77 @@
+spark:
+  documents:
+    - name: prd
+      description: "Product Requirement Documents"
+    - name: architecture
+      description: "Architecture Specifications"
+    - name: feature
+      description: "Feature Specifications"
+    - name: adr
+      description: "Architecture Decision Records"
+    - name: testplan
+      description: "Test Plans"
+  folders:
+    root: ./.spark
+    prd: ./.spark/{projectName}
+    architecture: ./.spark/{projectName}
+    feature: ./.spark/{projectName}/feature
+    adr: ./.spark/{projectName}/adr
+    testplan: ./.spark/{projectName}/testplan
+  spark-sdd:
+    enabled: true
+    agents:
+      - type: comments
+        editor: comments-editor
+      - type: prd
+        editor: prd-editor
+        reviewer: prd-reviewer
+        template: references/prd-template.md
+        guide: references/prd-template-guide.md
+      - type: architecture
+        editor: architecture-editor
+        reviewer: architecture-reviewer
+        template: references/architecture-template.md
+        guide: references/architecture-template-guide.md
+      - type: feature
+        editor: feature-editor
+        reviewer: feature-reviewer
+        template: references/feature-template.md
+        guide: references/feature-template-guide.md
+      - type: adr
+        editor: adr-editor
+        reviewer: adr-reviewer
+        template: references/adr-template.md
+        guide: references/adr-template-guide.md
+  spark-tdd:
+    enabled: true
+    roots:
+      instructions: .github/instructions
+    agents:
+      dotnet-webapi:
+        type: dotnet-webapi
+        coordinator: spark-tdd
+        phases:
+          context: tdd-dotnet-webapi-context
+          planner: tdd-dotnet-webapi-planner
+          implementer: tdd-dotnet-webapi-implementer
+          gate: tdd-dotnet-webapi-gate
+        reviewer: tdd-reviewer
+        scaffold: dotnet-webapi-project
+        references:
+          brief: references/tdd-execution-brief-template.md
+          testplan-template: references/testplan-template.md
+          reviewer-checklist: references/tdd-reviewer-checklist.md
+  spark-aspire:
+    enabled: true
+    roots:
+      source: src
+    naming:
+      apphost: AppHost
+      service-defaults: ServiceDefaults
+    skills:
+      - name: aspire
+    references:
+      skill: skills/aspire/SKILL.md
+      architecture: skills/aspire/references/architecture.md
+      cli-reference: skills/aspire/references/cli-reference.md
+      testing: skills/aspire/references/testing.md

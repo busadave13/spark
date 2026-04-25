@@ -1,12 +1,13 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 # Product Requirements Document
 
-> **Version**: 1.0<br>
+> **Version**: 1.1<br>
 > **Created**: 2026-04-15<br>
-> **Last Updated**: 2026-04-15<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Pressure Sensor<br>
-> **Status**: Approved
+> **Status**: Draft
+> **Type**: PRD<br>
 
 ---
 
@@ -184,6 +185,7 @@ Pressure Sensor Service provides one shared internal API that returns determinis
 | Sensor ID | Identifier used by a caller to request pressure data for one specific pressure sensor. |
 | Region | Named area used by a caller to request a representative pressure reading for that location. |
 | Seeded mock dataset | Human-readable project data that defines the deterministic pressure responses returned in v1 development scenarios. |
+| Weather report | An assembled output produced by dependent internal services that combines data from multiple sources — including barometric pressure — to describe current or expected atmospheric conditions for a region. |
 
 ---
 

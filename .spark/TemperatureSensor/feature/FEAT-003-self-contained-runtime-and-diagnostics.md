@@ -1,12 +1,13 @@
 <!-- SPARK -->
 # FEAT-003: Self-Contained Runtime and Diagnostics
 
-> **Version**: 1.0<br>
+> **Version**: 1.1<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-18<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Temperature Sensor WebAPI Service<br>
-> **Status**: Approved
+> **Status**: Draft
+> **Type**: FEATURE<br>
 
 ## Goal
 
@@ -19,7 +20,7 @@ This feature implements FR-007 and the operational expectations in PRD Section 7
 ## User Stories
 
 - As a **Service Developer**, I want **the service to start with committed defaults and fail clearly when required mock data is unavailable** so that **I can diagnose local environment issues quickly**.
-- As a **Integration Test Author**, I want **health and readiness signals plus structured lookup diagnostics** so that **test orchestration can detect whether the seeded service is actually ready before integration scenarios run**.
+- As a **Test Automation Engineer**, I want **health and readiness signals plus structured lookup diagnostics** so that **test orchestration can detect whether the seeded service is actually ready before integration scenarios run**.
 
 ## Acceptance Criteria
 

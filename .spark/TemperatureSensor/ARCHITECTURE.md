@@ -1,18 +1,19 @@
 <!-- SPARK -->
 # Architecture - Temperature Sensor WebAPI Service
 
-> **Version**: 1.0<br>
+> **Version**: 1.1<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-21<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Namespace**: Test<br>
 > **Project**: Temperature Sensor<br>
 > **Project Type**: dotnet-webapi<br>
-> **Status**: Approved
+> **Status**: Draft<br>
+> **Type**: ARCHITECTURE
 
 ---
 
-> Temperature Sensor WebAPI Service is a self-contained development-time HTTP API for internal services and test automation running on local workstations or cloud dev environments. It returns deterministic temperature and humidity payloads for supported regions and 8-character alphanumeric sensor IDs without calling any external sensor platform. The architecture is intentionally small: a single .NET 10 Minimal API reads curated JSON mocks from a local content root so callers get one stable contract and repeatable results.
+> Temperature Sensor WebAPI Service is a self-contained development-time HTTP API for internal services and test automation running on local workstations or cloud dev environments. It returns deterministic temperature and humidity payloads for supported regions and 8-character alphanumeric sensor IDs without calling any external sensor platform. The architecture is intentionally small: a single lightweight API reads curated JSON mocks from a local content root so callers get one stable contract and repeatable results.
 
 ---
 
@@ -165,9 +166,9 @@ Config is loaded in this order (later entries win):
 
 ## Observability
 
-- **Logging**: Structured application logs via `ILogger`; `Information` for successful lookups, `Warning` for validation failures and dataset misses, and `Error` for unreadable or malformed mock artifacts.
+- **Logging**: Structured application logs via the platform's structured logger; `Information` for successful lookups, `Warning` for validation failures and dataset misses, and `Error` for unreadable or malformed mock artifacts.
 - **Metrics**: Counters for lookup success, validation failure, dataset miss, and dataset read failure, plus a request-duration histogram for endpoint latency.
-- **Tracing**: Standard ASP.NET Core request tracing with OpenTelemetry-compatible spans around HTTP request handling and dataset reads; no downstream network spans exist in v1.
+- **Tracing**: Request tracing with telemetry-framework-compatible spans around HTTP request handling and dataset reads; no downstream network spans exist in v1.
 - **Health endpoint**: `GET /healthz` verifies process liveness, and `GET /readyz` should verify that the configured mock dataset path is accessible and readable.
 
 ---

@@ -1,12 +1,13 @@
 <!-- SPARK -->
 # FEAT-002: File-Backed Mock Dataset
 
-> **Version**: 1.0<br>
+> **Version**: 1.1<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-18<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Temperature Sensor WebAPI Service<br>
-> **Status**: Approved
+> **Status**: Draft
+> **Type**: FEATURE<br>
 
 ## Goal
 
@@ -19,7 +20,7 @@ This feature implements FR-003 and FR-006 while operationalizing ADR-0002. The P
 ## User Stories
 
 - As a **Service Developer**, I want **the service to read mock temperature data from curated JSON files** so that **I can inspect and update test fixtures without changing application code**.
-- As a **Integration Test Author**, I want **the same lookup key to resolve to the same JSON artifact on every run** so that **integration tests remain deterministic across machines and environments**.
+- As a **Test Automation Engineer**, I want **the same lookup key to resolve to the same JSON artifact on every run** so that **integration tests remain deterministic across machines and environments**.
 
 ## Acceptance Criteria
 

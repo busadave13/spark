@@ -1,12 +1,13 @@
 <!-- SPARK -->
 # FEAT-001: Seeded Temperature Lookup API
 
-> **Version**: 1.1<br>
+> **Version**: 1.2<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-18<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Temperature Sensor WebAPI Service<br>
-> **Status**: Approved
+> **Status**: Draft
+> **Type**: FEATURE<br>
 
 ## Goal
 
@@ -19,7 +20,7 @@ This feature implements FR-001 through FR-005 from PRD Section 6. The PRD identi
 ## User Stories
 
 - As a **Service Developer**, I want **to request a mock temperature reading for a known sensor in a supported region** so that **my dependent service can exercise temperature-driven logic against one shared test endpoint**.
-- As a **Integration Test Author**, I want **the lookup API to return the same success and error shapes on every run** so that **integration tests can assert the contract without custom per-suite adapters**.
+- As a **Test Automation Engineer**, I want **the lookup API to return the same success and error shapes on every run** so that **integration tests can assert the contract without custom per-suite adapters**.
 
 ## Acceptance Criteria
 

@@ -1,12 +1,13 @@
 <!-- SPARK -->
 # Product Requirements Document
 
-> **Version**: 1.5<br>
+> **Version**: 1.6<br>
 > **Created**: 2026-04-14<br>
-> **Last Updated**: 2026-04-15<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Temperature Sensor<br>
-> **Status**: Approved
+> **Status**: Draft<br>
+> **Type**: PRD
 
 ---
 

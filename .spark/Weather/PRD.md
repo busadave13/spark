@@ -2,12 +2,13 @@
 
 # Product Requirements Document
 
-> **Version**: 1.0<br>
+> **Version**: 1.1<br>
 > **Created**: 2026-04-20<br>
-> **Last Updated**: 2026-04-21<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Weather<br>
-> **Status**: Draft
+> **Status**: Draft<br>
+> **Type**: PRD
 
 ---
 

@@ -1,12 +1,15 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 # Architecture — Pressure Sensor Service
 
-> **Version**: 1.1<br>
+> **Version**: 1.2<br>
 > **Created**: 2026-04-15<br>
-> **Last Updated**: 2026-04-15<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
+> **Namespace**: Test<br>
 > **Project**: Pressure Sensor<br>
-> **Status**: Approved
+> **Project Type**: dotnet-webapi<br>
+> **Status**: Draft
+> **Type**: ARCHITECTURE<br>
 
 ---
 
@@ -161,8 +164,8 @@ Config is loaded in this order (later entries win):
 
 ## Observability
 
-- **Logging**: Structured logging via the built-in ASP.NET Core logging infrastructure. Level conventions: `Information` for successful lookups and startup events, `Warning` for recoverable issues (e.g., missing mock file for a valid request), `Error` for dataset validation failures and unhandled exceptions.
-- **Metrics**: No custom metrics in v1. Standard ASP.NET Core request metrics are available via the framework.
+- **Logging**: Structured logging via the framework's built-in logging infrastructure. Level conventions: `Information` for successful lookups and startup events, `Warning` for recoverable issues (e.g., missing mock file for a valid request), `Error` for dataset validation failures and unhandled exceptions.
+- **Metrics**: No custom metrics in v1. Standard framework request metrics are available out of the box.
 - **Tracing**: No distributed tracing in v1. The service is self-contained with no downstream calls to trace.
 - **Health endpoint**: `GET /healthz` returns `200 OK` with `{ "status": "healthy" }` unconditionally. `GET /readyz` checks that the `MockDataPath` directory exists and returns `200 OK` or `503 Service Unavailable` with error details.
 
@@ -174,17 +177,17 @@ Config is loaded in this order (later entries win):
 
 | Environment | Purpose | URL / Access |
 |---|---|---|
-| Local (standalone) | Individual developer testing via `dotnet run` | `http://localhost:{port}` per `launchSettings.json` |
+| Local (standalone) | Individual developer testing via the .NET CLI | `http://localhost:{port}` per `launchSettings.json` |
 | Local (Aspire) | Multi-service development orchestration via Aspire AppHost | URL assigned by Aspire dashboard |
 
 ### Deployment Topology
 
-Single-process ASP.NET Core application. No containers, no orchestration, no cloud deployment in v1. The service runs as a standalone process or as a project resource within the Aspire AppHost.
+Single-process application. No containers, no orchestration, no cloud deployment in v1. The service runs as a standalone process or as a project resource within the Aspire AppHost.
 
 ### CI/CD Pipeline
 
-- **Build**: Standard `dotnet build` as part of the solution-level build
-- **Test**: Unit tests run via `dotnet test` on the `PressureSensor.UnitTests` project
+- **Build**: Standard solution-level build via the .NET CLI
+- **Test**: Unit tests run via the .NET CLI against the `PressureSensor.UnitTests` project
 - **Deploy**: No deployment pipeline in v1 — this is a development-only service
 
 ---

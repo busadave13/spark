@@ -1,12 +1,13 @@
-<!-- SPECIT -->
+<!-- SPARK -->
 # FEAT-001: Region Sensor List
 
-> **Version**: 1.2<br>
+> **Version**: 1.3<br>
 > **Created**: 2026-04-15<br>
-> **Last Updated**: 2026-04-20<br>
+> **Last Updated**: 2026-04-25<br>
 > **Owner**: Dave Harding<br>
 > **Project**: Pressure Sensor<br>
 > **Status**: Draft
+> **Type**: FEATURE<br>
 
 ## Goal
 
