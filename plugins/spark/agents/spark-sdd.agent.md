@@ -15,7 +15,7 @@ Every request begins by reading `spark.config.yaml`. Use it to resolve:
 - **Agent paths** — spec agent paths (editors, reviewers) and reference-file paths (templates, guides) from the `spark.agents` block.
 - **Folder paths** — all folder paths via the `spark.folders` block. Folder templates contain `{projectName}` which the orchestrator replaces with the actual project name before passing concrete paths to sub-agents.
 
-No agent — including this orchestrator — hardcodes `.specs` folder names. All folder paths originate from `spark.config.yaml`.
+No agent — including this orchestrator — hardcodes `.spark` folder names. All folder paths originate from `spark.config.yaml`.
 
 ## Role
 
@@ -26,9 +26,9 @@ No agent — including this orchestrator — hardcodes `.specs` folder names. Al
 
 ## Critical rules
 
-- **Always** use the appropriate resolved spec agent for `.specs/` files - never edit spec documents directly in this orchestrator.
+- **Always** use the appropriate resolved spec agent for `.spark/` files - never edit spec documents directly in this orchestrator.
 - **Always** read `spark.config.yaml` before planning or delegating work.
-- **Never hardcode `.specs` folder names.** All folder paths come from `spark.config.yaml` `spark.folders` with `{projectName}` resolved.
+- **Never hardcode `.spark` folder names.** All folder paths come from `spark.config.yaml` `spark.folders` with `{projectName}` resolved.
 - This agent is specification-only. It supports PRDs, architecture documents, ADRs, and feature specs.
 - Pass compact resolved context, paths, and findings between agents - do not paste raw documents when a brief is sufficient.
 - Pass resolved folder paths plus resolved template and guide paths into subagents so they do not need hardcoded folder or reference-file assumptions.
@@ -71,16 +71,16 @@ Folder paths are resolved from `spark.config.yaml` `spark.folders`. Each templat
 
 | Config key | Variable | Example (project = Mockery) |
 |---|---|---|
-| `spark.folders.root` | `{specs-root}` | `./.specs` |
-| `spark.folders.prd` | `{docs-root}` | `./.specs/Mockery` |
-| `spark.folders.architecture` | `{docs-root}` | `./.specs/Mockery` |
-| `spark.folders.feature` | `{feature-root}` | `./.specs/Mockery/feature` |
-| `spark.folders.adr` | `{adr-root}` | `./.specs/Mockery/adr` |
-| `spark.folders.testplan` | `{testplan-root}` | `./.specs/Mockery/testplan` |
+| `spark.folders.root` | `{specs-root}` | `./.spark` |
+| `spark.folders.prd` | `{docs-root}` | `./.spark/Mockery` |
+| `spark.folders.architecture` | `{docs-root}` | `./.spark/Mockery` |
+| `spark.folders.feature` | `{feature-root}` | `./.spark/Mockery/feature` |
+| `spark.folders.adr` | `{adr-root}` | `./.spark/Mockery/adr` |
+| `spark.folders.testplan` | `{testplan-root}` | `./.spark/Mockery/testplan` |
 
 Runtime contract:
 
-- `{docs-root}` is the project spec root, e.g. `./.specs/Mockery`.
+- `{docs-root}` is the project spec root, e.g. `./.spark/Mockery`.
 - `PRD.md` and `ARCHITECTURE.md` live directly under `{docs-root}`.
 - Feature specs live under `{docs-root}/feature/`.
 - ADRs live under `{docs-root}/adr/`.
@@ -116,7 +116,7 @@ Run this pre-flight when `{projectName}`, `{docs-root}`, or `{resolvedNamespace}
 
 **Step A** - Ask for `{projectName}` if not supplied.
 
-**Step B** - Resolve folder paths from `spark.config.yaml` `spark.folders` by replacing `{projectName}` with the value from Step A. Set `{docs-root}` = the resolved project spec root for PRD and architecture work, e.g. `./.specs/{projectName}`. If the folder exists, set `{specs-exists} = true`. If it does not exist, set `{specs-exists} = false` and let the delegated editor create it.
+**Step B** - Resolve folder paths from `spark.config.yaml` `spark.folders` by replacing `{projectName}` with the value from Step A. Set `{docs-root}` = the resolved project spec root for PRD and architecture work, e.g. `./.spark/{projectName}`. If the folder exists, set `{specs-exists} = true`. If it does not exist, set `{specs-exists} = false` and let the delegated editor create it.
 
 **Step C** - If `{specs-exists}` and `{docs-root}/ARCHITECTURE.md` exists, extract `**Namespace**:` as `{resolvedNamespace}`. PRD has no Namespace field.
 
@@ -169,10 +169,10 @@ This orchestrator handles comment resolution for specification documents by reso
 ## Delegation rules
 
 - **Pass resolved context, not raw bulk.** Include project name, paths, namespace, findings, and resolved folder paths from `spark.config.yaml` - not full document bodies unless the editor specifically needs them.
-- **Always pass folder paths resolved from `spark.config.yaml`** - never hardcode `.specs` folder names in delegation prompts.
+- **Always pass folder paths resolved from `spark.config.yaml`** - never hardcode `.spark` folder names in delegation prompts.
 - **Chain outputs.** Pass file paths or compact handoff blocks between steps.
 - **Do not modify files yourself.** Subagents own all file operations.
-- **Subagents must not fall back to hardcoded `.specs` paths.** If orchestrator-provided folder paths are missing, subagents should abort rather than guessing paths from conventions.
+- **Subagents must not fall back to hardcoded `.spark` paths.** If orchestrator-provided folder paths are missing, subagents should abort rather than guessing paths from conventions.
 - **Ask when ambiguous.** If the request does not map to a single spec type or project, ask first.
 - **All document operations use named subagents** resolved from config. Do not load them as skills.
 - **Parallel ADR reviews.** One reviewer subagent per ADR file, in parallel.
@@ -210,7 +210,7 @@ For compound requests:
 
 ## Key principles
 
-- **Project folder paths come from `spark.config.yaml`**: read `spark.folders`, resolve `{projectName}`, and pass concrete folder paths into every editor and reviewer delegation. Never hardcode `.specs` folder names.
+- **Project folder paths come from `spark.config.yaml`**: read `spark.folders`, resolve `{projectName}`, and pass concrete folder paths into every editor and reviewer delegation. Never hardcode `.spark` folder names.
 - **Agent and reference paths come from `spark.config.yaml`**: read `spark.agents` to resolve editors, reviewers, templates, and guides. All paths are relative to the config file's directory.
 - **Specification workflow**: PRD -> Architecture (+ ADRs as needed) -> Feature specs.
 - **Reserved config entries stay reserved until routed**: `testplan` may exist in config before the orchestrator exposes a testplan workflow.

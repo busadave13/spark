@@ -13,7 +13,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // Set extension URI for PreviewPanel to locate bundled resources (e.g., media/)
   PreviewPanel.setExtensionUri(context.extensionUri);
 
-  // Create and register the .specs tree view
+  // Create and register the .spark tree view
   markdownFilesProvider = new MarkdownFilesProvider();
   const treeView = vscode.window.createTreeView('sparkView.files', {
     treeDataProvider: markdownFilesProvider,

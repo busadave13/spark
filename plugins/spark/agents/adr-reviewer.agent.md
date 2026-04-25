@@ -16,7 +16,7 @@ This skill reviews ADR files only. To review `ARCHITECTURE.md`, use `architectur
 
 ## Step 1: Resolve path and collect ADR files
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
 
 - If `{docs-root}` was provided as input (e.g., by the Spark orchestrator), use it as-is.
 - If a project name is provided (e.g., `Mockery`), use the provided `{docs-root}` folder path or ask the user for the ADR folder location.

@@ -2,7 +2,7 @@ import * as assert from 'assert';
 import { buildSparkTree, SPARK_FOLDER } from '../../markdownFilesProvider';
 
 suite('buildSparkTree Test Suite', () => {
-  test('returns a .specs root node for empty input', () => {
+  test('returns a .spark root node for empty input', () => {
     const tree = buildSparkTree([]);
 
     assert.strictEqual(tree.name, SPARK_FOLDER);
@@ -32,10 +32,10 @@ suite('buildSparkTree Test Suite', () => {
     assert.deepStrictEqual(weather.files, ['SPEC.md']);
   });
 
-  test('accepts workspace-relative paths that include the .specs prefix', () => {
+  test('accepts workspace-relative paths that include the .spark prefix', () => {
     const tree = buildSparkTree([
-      '.specs\\Mockery\\ARCHITECTURE.md',
-      '.specs\\Mockery\\feature\\FEAT-002.md',
+      '.spark\\Mockery\\ARCHITECTURE.md',
+      '.spark\\Mockery\\feature\\FEAT-002.md',
     ]);
 
     assert.strictEqual(tree.folders.length, 1);

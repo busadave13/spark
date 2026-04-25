@@ -18,7 +18,7 @@ Every request begins by reading `spark.config.yaml`. Use it to resolve:
 - **Folder paths** — all folder paths via the `spark.folders` block. Folder templates contain `{projectName}` which the coordinator replaces with the actual project name before passing concrete paths to sub-agents.
 - **Roots** — `spark.spark-tdd.roots.instructions` for the per-project instructions folder.
 
-No agent — including this coordinator — hardcodes `.specs` folder names, agent filenames, or reference paths. All values originate from `spark.config.yaml`.
+No agent — including this coordinator — hardcodes `.spark` folder names, agent filenames, or reference paths. All values originate from `spark.config.yaml`.
 
 ## What this agent owns
 
@@ -44,7 +44,7 @@ run the resolved reviewer agent or perform status transitions.
 ## Execution rules
 
 - **Always** read `spark.config.yaml` before planning or delegating work.
-- **Never hardcode `.specs` folder names.** All folder paths come from `spark.config.yaml` `spark.folders` with `{projectName}` resolved.
+- **Never hardcode `.spark` folder names.** All folder paths come from `spark.config.yaml` `spark.folders` with `{projectName}` resolved.
 - **Never hardcode agent names or reference paths.** Resolve from config.
 - Keep repo-wide discovery in the **context phase**. This coordinator does path/feature
   resolution (Step 0 + Step 1) only; it does not re-scan the codebase.
@@ -96,11 +96,11 @@ Folder paths are resolved from `spark.config.yaml` `spark.folders`. Each templat
 
 | Config key | Variable | Example (project = Mockery) |
 |---|---|---|
-| `spark.folders.root` | `{specs-root}` | `./.specs` |
-| `spark.folders.prd` | `{docs-root}` | `./.specs/Mockery` |
-| `spark.folders.feature` | `{feature-root}` | `./.specs/Mockery/feature` |
-| `spark.folders.adr` | `{adr-root}` | `./.specs/Mockery/adr` |
-| `spark.folders.testplan` | `{testplan-root}` | `./.specs/Mockery/testplan` |
+| `spark.folders.root` | `{specs-root}` | `./.spark` |
+| `spark.folders.prd` | `{docs-root}` | `./.spark/Mockery` |
+| `spark.folders.feature` | `{feature-root}` | `./.spark/Mockery/feature` |
+| `spark.folders.adr` | `{adr-root}` | `./.spark/Mockery/adr` |
+| `spark.folders.testplan` | `{testplan-root}` | `./.spark/Mockery/testplan` |
 
 ### Abort messages
 
@@ -115,7 +115,7 @@ Surface verbatim and stop — do not fall back to a default:
 
 ## Step 1: Resolve the target feature
 
-Use the resolved `{docs-root}` from Step 0 (not a hardcoded `.specs/` path). Do not search subdirectories, CWD, or any other location.
+Use the resolved `{docs-root}` from Step 0 (not a hardcoded `.spark/` path). Do not search subdirectories, CWD, or any other location.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 5.
 2. Run `git rev-parse --show-toplevel` and capture `{repo-root}`. If it fails, ask the

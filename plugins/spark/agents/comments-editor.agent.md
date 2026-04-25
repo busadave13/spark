@@ -23,14 +23,14 @@ When invoked by the Spark orchestrator, this agent receives the following input 
 |---|---|---|
 | `{spec-type}` | Document type: `prd`, `architecture`, `adr`, `feature` | `prd` |
 | `{project-name}` | Project name | `Mockery` |
-| `{docs-root}` | Resolved project spec root | `.specs/Mockery` |
-| `{specs-root}` | Resolved specs root | `.specs` |
-| `{adr-root}` | Resolved ADR folder (only when `{spec-type}` is `adr`) | `.specs/Mockery/adr` |
-| `{feature-root}` | Resolved feature folder (only when `{spec-type}` is `feature`) | `.specs/Mockery/feature` |
+| `{docs-root}` | Resolved project spec root | `.spark/Mockery` |
+| `{specs-root}` | Resolved specs root | `.spark` |
+| `{adr-root}` | Resolved ADR folder (only when `{spec-type}` is `adr`) | `.spark/Mockery/adr` |
+| `{feature-root}` | Resolved feature folder (only when `{spec-type}` is `feature`) | `.spark/Mockery/feature` |
 | `{target-doc}` | (Optional) Specific document filename when the user targets a single document | `FEAT-002-auth.md` |
 
 Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode
-`.specs` folder names. If any required parameter is missing and no document path was provided
+`.spark` folder names. If any required parameter is missing and no document path was provided
 for direct invocation, ask the orchestrator/user before proceeding.
 
 ### 1b — Discover the target document and sidecar

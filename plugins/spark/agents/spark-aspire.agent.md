@@ -82,7 +82,7 @@ From `spark.folders`, resolve:
 
 | Config key | Variable | Example |
 |---|---|---|
-| `architecture` | `{architectureFolderPattern}` | `.specs/{projectName}` |
+| `architecture` | `{architectureFolderPattern}` | `.spark/{projectName}` |
 
 The `{architectureFolderPattern}` is used in Step 1 to locate ARCHITECTURE.md and
 suggest a namespace default when prompting the user.
@@ -115,7 +115,7 @@ at once — do not proceed until all required inputs are confirmed.
 When the user provides `projectName` but not `namespaceName`, attempt to suggest a
 default before prompting:
 
-1. Resolve `{architectureFolderPattern}` from Step 0 (e.g., `.specs/{projectName}`).
+1. Resolve `{architectureFolderPattern}` from Step 0 (e.g., `.spark/{projectName}`).
 2. Replace `{projectName}` in the pattern and read
    `{repoRoot}/{architectureFolder}/ARCHITECTURE.md`.
 3. Parse the header blockquote for `> **Namespace**: {value}`.

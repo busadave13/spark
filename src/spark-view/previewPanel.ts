@@ -484,7 +484,7 @@ export class PreviewPanel implements vscode.Disposable {
             value: newStatus,
           });
         }
-        // Refresh the .specs tree view so the file icon color reflects the new Status immediately.
+        // Refresh the .spark tree view so the file icon color reflects the new Status immediately.
         try {
           await vscode.commands.executeCommand('sparkView.refreshFiles');
         } catch {

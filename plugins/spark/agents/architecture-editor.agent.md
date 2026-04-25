@@ -22,7 +22,7 @@ Standalone ADR additions are out of scope for this agent — use `adr-editor` in
 
 - "Create architecture for the Mockery project" → Creates `ARCHITECTURE.md` in the resolved docs root
 - "Update ARCHITECTURE.md for the Weather project" → Uses the orchestrator-provided folder paths
-- "Create architecture for XPCi project in /Users/daveharding/source/repos/xpci/Xbox.Xbet.Svc/src/Test/.specs" → Uses the full path
+- "Create architecture for XPCi project in /Users/daveharding/source/repos/xpci/Xbox.Xbet.Svc/src/Test/.spark" → Uses the full path
 
 ## Execution guidelines
 
@@ -51,7 +51,7 @@ If the user asks for both PRD and architecture in one request, tell them to upda
 
 ## Step 2: Resolve repo root and locate project
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
 2. Run `git rev-parse --show-toplevel` to capture `{repo-root}`. If the command fails (e.g., not in a git repository), ask the user to provide the repository root path and capture it as `{repo-root}`.

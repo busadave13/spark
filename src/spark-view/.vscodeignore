@@ -5,7 +5,7 @@ test/**
 out/**
 publish/**
 .github/**
-.specs/**
+.spark/**
 .gitignore
 scripts/**
 tsconfig.json

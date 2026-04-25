@@ -38,7 +38,7 @@ If an execution brief is present:
 
 If no execution brief is present:
 
-1. resolve `{docs-root}` from the supplied project or file path (do not hardcode `.specs/` paths)
+1. resolve `{docs-root}` from the supplied project or file path (do not hardcode `.spark/` paths)
 2. load the target `FEAT-NNN-*.md` files
 3. locate matching `.testplan.md` files under the resolved testplan folder
 4. locate test files and relevant implementation files

@@ -40,7 +40,7 @@ Creates one or more ADR files and patches the Decision Log table in `ARCHITECTUR
 
 ## Step 1: Resolve paths
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 5.
 2. Run `git rev-parse --show-toplevel` to find `{repo-root}`. If that fails, ask the user.

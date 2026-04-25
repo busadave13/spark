@@ -16,7 +16,7 @@ function getStatusIconColor(status: string | undefined): vscode.ThemeColor | und
   }
 }
 
-export const SPARK_FOLDER = '.specs';
+export const SPARK_FOLDER = '.spark';
 const SPARK_MARKDOWN_GLOB = `${SPARK_FOLDER}/**/*.md`;
 const SPARK_SIDECAR_GLOB = `${SPARK_FOLDER}/**/*.comments.json`;
 
@@ -127,7 +127,7 @@ export class MarkdownFileItem extends vscode.TreeItem {
 }
 
 /**
- * Represents a folder in the .specs tree view.
+ * Represents a folder in the .spark tree view.
  */
 export class FolderItem extends vscode.TreeItem {
   constructor(
@@ -152,7 +152,7 @@ export class FolderItem extends vscode.TreeItem {
 type TreeItem = MarkdownFileItem | FolderItem;
 
 /**
- * Provides markdown files for the .specs sidebar tree view.
+ * Provides markdown files for the .spark sidebar tree view.
  */
 export class MarkdownFilesProvider implements vscode.TreeDataProvider<TreeItem> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<TreeItem | undefined | null | void>();
@@ -178,7 +178,7 @@ export class MarkdownFilesProvider implements vscode.TreeDataProvider<TreeItem> 
 
     this.workspaceFolderWatcher = vscode.workspace.onDidChangeWorkspaceFolders(() => this.refresh());
 
-    // Belt-and-suspenders: also refresh on document saves for .specs/ markdown
+    // Belt-and-suspenders: also refresh on document saves for .spark/ markdown
     // files. This catches saves made via VS Code's API that the FileSystemWatcher
     // may miss or delay (e.g., agent-driven edits, internal field updates).
     this.saveDocumentWatcher = vscode.workspace.onDidSaveTextDocument(doc => {
@@ -228,7 +228,7 @@ export class MarkdownFilesProvider implements vscode.TreeDataProvider<TreeItem> 
       return [];
     }
 
-    // Collect a root tree item per workspace folder that contains .specs
+    // Collect a root tree item per workspace folder that contains .spark
     const rootItems: FolderItem[] = [];
     for (const folder of folders) {
       const sparkRootPath = path.join(folder.uri.fsPath, SPARK_FOLDER);
@@ -246,7 +246,7 @@ export class MarkdownFilesProvider implements vscode.TreeDataProvider<TreeItem> 
       rootItems.push(rootItem);
     }
 
-    // Single folder: preserve current UX (just show .specs root)
+    // Single folder: preserve current UX (just show .spark root)
     if (rootItems.length <= 1) {
       return rootItems;
     }

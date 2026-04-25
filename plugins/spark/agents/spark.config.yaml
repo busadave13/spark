@@ -11,12 +11,12 @@ spark:
     - name: testplan
       description: "Test Plans"
   folders:
-    root: ./.specs
-    prd: ./.specs/{projectName}
-    architecture: ./.specs/{projectName}
-    feature: ./.specs/{projectName}/feature
-    adr: ./.specs/{projectName}/adr
-    testplan: ./.specs/{projectName}/testplan
+    root: ./.spark
+    prd: ./.spark/{projectName}
+    architecture: ./.spark/{projectName}
+    feature: ./.spark/{projectName}/feature
+    adr: ./.spark/{projectName}/adr
+    testplan: ./.spark/{projectName}/testplan
   spark-sdd:
     enabled: true
     agents:

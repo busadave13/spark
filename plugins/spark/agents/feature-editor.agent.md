@@ -50,7 +50,7 @@ Parse the user's prompt to determine the operation mode:
 
 ### Resolve paths
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
 
 1. Run `git rev-parse --show-toplevel` to identify `{repo-root}`. If the command fails, ask the user to provide the repository root path manually.
 2. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 3.

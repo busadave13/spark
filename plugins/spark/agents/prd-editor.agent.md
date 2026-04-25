@@ -26,7 +26,7 @@ what is being built, for whom, and why.
 
 ## Step 1: Resolve project name and docs root
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.specs` folder names.
+Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
 
 1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
 2. **Determine `{projectName}`** — extract the project name from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
