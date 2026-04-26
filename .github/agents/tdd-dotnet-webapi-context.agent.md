@@ -10,126 +10,71 @@ disable-model-invocation: false
 
 Build the compact execution brief used by later TDD phases.
 
-Inputs are pre-resolved by the coordinator from `spark.config.yaml` and should include:
+## Inputs
 
-- `{repo-root}`
-- `{project-root}` — the repository root, used for solution/project inventory discovery
-- `{docs-root}` — resolved from `spark.folders` with `{projectName}` replaced
-- `{projectName}`
-- `{feature-path}`
-- `{testplan-path}`
-- `{adr-root}` — resolved from `spark.folders.adr` with `{projectName}` replaced
-- `{testplan-root}` — resolved from `spark.folders.testplan` with `{projectName}` replaced
-- `{instructions-root}` — resolved by the coordinator from `spark.spark-tdd.roots.instructions`.
-  Do not assume `.github/instructions` or any other hardcoded path.
-- `{scaffold-skill}` — resolved by the coordinator from the matched workflow entry's `scaffold` in `spark.config.yaml`.
-- `{brief-reference}` — resolved by the coordinator from the matched workflow entry's `references.brief` in `spark.config.yaml`.
+All inputs are pre-resolved by the coordinator. `{projectName-lowercase}` = lowercased `{projectName}`.
 
-When this file refers to `{projectName-lowercase}`, derive it by lowercasing
-`{projectName}`.
-
-**Repo-wide discovery lives here.** The coordinator does path/feature resolution only
-(Step 1 of the coordinator). This phase owns codebase exploration, instruction loading,
-and `doc_snapshots` population. Do not repeat these in later phases.
+| Variable | Description |
+|---|---|
+| `{repo-root}` | Repository root |
+| `{project-root}` | Project root for solution/project inventory discovery |
+| `{docs-root}` | Docs folder for this project |
+| `{projectName}` | Project name |
+| `{feature-path}` | Path to the target feature spec |
+| `{testplan-path}` | Path to the testplan file |
+| `{adr-root}` | ADR folder for this project |
+| `{testplan-root}` | Testplan folder for this project |
+| `{instructions-root}` | Instructions folder (no hardcoded default) |
+| `{scaffold-skill}` | Scaffold skill to invoke if instructions are missing |
+| `{brief-reference}` | Path to the brief template reference file |
 
 ## Rules
 
-- The emitted execution brief must include `brief_schema_version: 3` as a top-level field.
-- Read `{brief-reference}` (resolved from config, passed by the coordinator) before emitting the brief.
-- Load only the files needed to normalize context for later phases.
-- Summarize; do not paste raw feature, architecture, ADR, code, or test content into
-  the brief.
-- If repo instructions are missing, **bootstrap them synchronously in Step 3** (see
-  below) and proceed. Do not return control to the coordinator just to trigger a
-  bootstrap and a re-run — that double-pass is a significant perf tax we want to avoid.
-- Populate `doc_snapshots` in the brief with feature, testplan, ARCHITECTURE, and ADR
-  summaries the downstream phases will need. Later phases trust these snapshots.
-- Classify missing structure exactly once here as either
-  `prerequisites_missing` or `deliverable_scaffold`.
+- Include `brief_schema_version: 3` in the emitted brief.
+- Read `{brief-reference}` before emitting the brief.
+- Load only files needed to normalize context for later phases.
+- Summarize — never paste raw content into the brief.
+- If repo instructions are missing, bootstrap them in Step 3 inline. Do not return to the coordinator for a re-run.
+- Populate `doc_snapshots` with feature, testplan, ARCHITECTURE, and ADR summaries. Later phases trust these.
+- Classify missing structure exactly once as `prerequisites_missing` or `deliverable_scaffold`.
 
-## Step 1: Validate the resolved target
+This phase owns codebase exploration, instruction loading, and `doc_snapshots` population. Do not repeat these in later phases.
 
-1. Re-read `{feature-path}` metadata and confirm `**Status**` is `Approved`.
-   If not, halt with:
-   > "⛔ [FEAT-NNN] has Status: {status}. Set Status to `Approved` in
-   > `{feature-path}`, then run the resolved TDD agent again."
-2. Read `{docs-root}/ARCHITECTURE.md` metadata and confirm `**Project Type**` is
-   exactly `dotnet-webapi`.
-   If missing or invalid, halt with:
-   > "⛔ ARCHITECTURE.md is missing a valid `Project Type`. Run architecture-editor
-   > to set `**Project Type**` to `dotnet-webapi`, then run the resolved TDD agent
-   > again."
+## Step 1: Validate target
 
-## Step 2: Load focused discovery context
+1. Read `{feature-path}` metadata — confirm `**Status**` is `Approved`.
+   If not, halt: `"⛔ [FEAT-NNN] has Status: {status}. Set to Approved, then re-run."`
+2. Read `{docs-root}/ARCHITECTURE.md` metadata — confirm `**Project Type**` is `dotnet-webapi`.
+   If not, halt: `"⛔ ARCHITECTURE.md missing valid Project Type. Run architecture-editor to fix."`
+
+## Step 2: Load discovery context
 
 Read in one parallel call:
 
-- `{feature-path}` - full content
-- `{docs-root}/ARCHITECTURE.md` - metadata plus only sections needed to capture
-  layers, boundaries, runtime/test topology, and component conventions
-- Relevant ADRs from `{adr-root}` (resolved from `spark.folders.adr`, passed by the coordinator) - title, Decision, and Consequences only;
-  skip ADRs that are clearly unrelated to the feature domain
+- `{feature-path}` — full content
+- `{docs-root}/ARCHITECTURE.md` — layers, boundaries, runtime/test topology, conventions
+- Relevant ADRs from `{adr-root}` — title, Decision, Consequences only; skip unrelated ADRs
 - `{instructions-root}/{projectName-lowercase}.instructions.md` if it exists
-- Project inventory around `{project-root}`:
-  - solution and project files (`*.sln`, `*.csproj`)
-  - runtime entry points (`Program.cs`, startup hosts)
-  - test projects, shared test helpers, fixtures, and app hosts
-  - runner/config files that help infer the test command
+- Project inventory around `{project-root}`: `*.sln`, `*.csproj`, `Program.cs`, test projects, fixtures, runner configs
 
-Carry forward concise summaries rather than raw text:
+Carry forward concise summaries of: architecture constraints, ADR decisions, repo/test conventions, candidate files.
 
-- architecture constraints
-- relevant ADR decisions
-- repo and test conventions
-- candidate runtime, test, and implementation files
+## Step 3: Structural readiness
 
-## Step 3: Structural readiness classification
-
-1. Resolve `{project-instructions}` =
-   `{instructions-root}/{projectName-lowercase}.instructions.md`.
-2. If `{project-instructions}` is absent, **bootstrap synchronously in this phase**
-   to avoid the coordinator round-trip:
-   - If the scaffold skill needs user input we do not yet have (e.g. a namespace),
-     return `requires_instruction_bootstrap: true` with the missing inputs enumerated
-     under `structural_check.bootstrap_needs`. Coordinator will collect and re-invoke.
-   - Otherwise, invoke `{scaffold-skill}` via `runSubagent`, passing
-     `{instructions-root}` and any other pre-resolved inputs. Wait for completion,
-     then re-read `{project-instructions}` and continue.
-   - Set `requires_instruction_bootstrap: false` once the file exists.
-3. Build two checklists from the now-present `{project-instructions}`:
-   - repo-required scaffolding from the instruction file
-   - approved target-state scaffolding from the feature, architecture summaries, and
-     relevant ADR summaries
-4. Validate both checklists against the filesystem **in a single traversal** — one
-   directory walk that tags each missing item as either `prerequisites_missing` or
-   `deliverable_scaffold`. Do not walk twice.
-5. Classify missing items:
-   - `prerequisites_missing` - required only by repo instructions and not part of
-     the approved target state
-   - `deliverable_scaffold` - explicitly required by approved docs as part of the
-     feature's runtime or test topology
+1. Resolve `{project-instructions}` = `{instructions-root}/{projectName-lowercase}.instructions.md`.
+2. If absent, bootstrap inline:
+   - If the scaffold skill needs unknown inputs → set `requires_instruction_bootstrap: true` with missing inputs in `structural_check.bootstrap_needs`.
+   - Otherwise → invoke `{scaffold-skill}` via `runSubagent`, wait, re-read, continue. Set `requires_instruction_bootstrap: false`.
+3. Build two checklists from `{project-instructions}`:
+   - Repo-required scaffolding
+   - Approved target-state scaffolding (from feature, architecture, ADR summaries)
+4. Validate both against the filesystem in **one traversal**, tagging each missing item as `prerequisites_missing` or `deliverable_scaffold`.
 
 ## Step 4: Emit the execution brief
 
-Return a fenced YAML block that follows the brief template at
-`{brief-reference}` (resolved from config, passed by the coordinator).
+Return a fenced YAML block following the template at `{brief-reference}`.
 
-Populate at least these fields:
-
-- `project`
-- `feature`
-- `testplan`
-- `paths`
-- `doc_snapshots` — concise summaries of feature, testplan, ARCHITECTURE, and relevant
-  ADRs so downstream phases do not re-read source files
-- `acceptance_criteria`
-- `architecture_constraints`
-- `adr_decisions`
-- `repo_conventions`
-- `structural_check`
-- `coverage_targets.ac_ids`
-- `suite_cache` — leave `last_run_at`, `code_sha`, and `result` null; the implementer
-  populates them after the first real run
+Required fields: `project`, `feature`, `testplan`, `paths`, `doc_snapshots`, `acceptance_criteria`, `architecture_constraints`, `adr_decisions`, `repo_conventions`, `structural_check`, `coverage_targets.ac_ids`, `suite_cache` (leave `last_run_at`, `code_sha`, `result` null).
 
 Output contract:
 
@@ -141,7 +86,4 @@ execution_brief:
   ...
 ```
 
-Use `result: halt` only for invalid feature status or invalid/missing `Project Type`.
-Use `result: ready` when instruction bootstrap is needed but could not be completed
-here (missing inputs). Normally the bootstrap is completed inline in Step 3 and
-`structural_check.requires_instruction_bootstrap` is `false` on return.
+`halt` = invalid feature status or missing/invalid Project Type. `ready` = all other cases (including pending bootstrap with missing inputs).
