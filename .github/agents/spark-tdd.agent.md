@@ -5,443 +5,256 @@ tools: [execute, read, agent, edit, search, todo, vscode/memory]
 user-invocable: true
 ---
 
+# Input & Configuration
+
+Set the variables below before invoking. These are not resolved from `spark.config.yaml`.
+
+## Variable Configuration
+
+**Agent names:**
+- `{context-agent}` = (e.g. `tdd-dotnet-webapi-context`)
+- `{planner-agent}` = (e.g. `tdd-dotnet-webapi-planner`)
+- `{implementer-agent}` = (e.g. `tdd-dotnet-webapi-implementer`)
+- `{gate-agent}` = (e.g. `tdd-dotnet-webapi-gate`)
+- `{reviewer-agent}` = (e.g. `tdd-reviewer`)
+- `{scaffold-skill}` = (e.g. `dotnet-webapi-project`)
+- `{feature-editor-agent}` = (e.g. `feature-editor`)
+
+**Paths:**
+- `{repo-root}` = repo root (absolute)
+- `{project-root}` = project root (usually same as repo-root)
+- `{docs-root}` = spec root (e.g. `./.spark/Mockery`)
+- `{feature-root}` = feature specs (e.g. `./.spark/Mockery/feature`)
+- `{adr-root}` = ADR folder (e.g. `./.spark/Mockery/adr`)
+- `{testplan-root}` = testplan folder (e.g. `./.spark/Mockery/testplan`)
+- `{instructions-root}` = instructions folder
+- `{agents-root}` = agents folder (relative, e.g. `plugins/spark/agents`)
+- `{skills-root}` = skills folder (relative, e.g. `plugins/spark/skills`)
+
+**References:**
+- `{brief-reference}` = execution brief template
+- `{testplan-template-reference}` = testplan template
+- `{reviewer-checklist-reference}` = reviewer checklist
+
+**Example** (Mockery project):
+```
+{context-agent} = tdd-dotnet-webapi-context
+{planner-agent} = tdd-dotnet-webapi-planner
+{implementer-agent} = tdd-dotnet-webapi-implementer
+{gate-agent} = tdd-dotnet-webapi-gate
+{reviewer-agent} = tdd-reviewer
+{scaffold-skill} = dotnet-webapi-project
+{feature-editor-agent} = feature-editor
+{repo-root} = /Users/you/repos/myproject
+{project-root} = /Users/you/repos/myproject
+{docs-root} = ./.spark/Mockery
+{feature-root} = ./.spark/Mockery/feature
+{adr-root} = ./.spark/Mockery/adr
+{testplan-root} = ./.spark/Mockery/testplan
+{instructions-root} = ./.spark/Mockery/instructions
+{agents-root} = plugins/spark/agents
+{skills-root} = plugins/spark/skills
+{brief-reference} = plugins/spark/agents/references/tdd-execution-brief-template.md
+{testplan-template-reference} = plugins/spark/agents/references/testplan-template.md
+{reviewer-checklist-reference} = plugins/spark/agents/references/tdd-reviewer-checklist.md
+```
+
+## Input Parameters
+
+Determined from invocation:
+- `{projectName}` = project identifier (e.g. "Mockery")
+- `{feature-path}` = path to FEAT-NNN-*.md file
+- `{testplan-path}` = constructed as `{testplan-root}/FEAT-{NNN}-{feature-slug}.testplan.md`
+
+---
+
 # TDD .NET WebAPI Coordinator
 
 Implement an approved feature spec using strict red-green-refactor TDD, but do it
 through smaller phase agents and a compact execution brief rather than one monolithic
 prompt.
 
-Every request begins by reading `spark.config.yaml`. Use it to resolve:
-
-- **Agent names** — phase agents (context, planner, implementer, gate), reviewer, and scaffold skill from the `spark.spark-tdd.agents` block.
-- **Reference paths** — brief template, testplan template, and reviewer checklist from the matched workflow entry's `references` sub-block. All reference paths are relative to the config file's directory.
-- **Folder paths** — all folder paths via the `spark.folders` block. Folder templates contain `{projectName}` which the coordinator replaces with the actual project name before passing concrete paths to sub-agents.
-- **Roots** — `spark.spark-tdd.roots.instructions` for the per-project instructions folder.
-
-No agent — including this coordinator — hardcodes `.spark` folder names, agent filenames, or reference paths. All values originate from `spark.config.yaml`.
+This coordinator orchestrates the workflow using the variables configured above.
 
 ## What this agent owns
 
-- reading `spark.config.yaml` and resolving all workflow assets
-- path resolution and precondition checks
-- instruction bootstrap when repo-specific instructions are missing
-- coordination between context, planner, implementer, and gate phases
-- reviewer BLOCK convergence handling
-- feature status transition via the resolved editor agent
-- the final summary re-read from disk
+- Validating variables and paths
+- Path resolution and precondition checks
+- Instruction bootstrap when needed
+- Coordination between context, planner, implementer, and gate phases
+- Reviewer BLOCK convergence handling
+- Feature status transition
+- Final summary generation
 
 ## Autonomy contract
 
-This coordinator runs autonomously end to end. It may halt only when:
+Run autonomously end-to-end. Halt only when:
+1. Feature has ambiguity blockers after planner phase
+2. Required scaffolding is missing after instruction bootstrap
+3. Same reviewer BLOCK set recurs after auto-fix attempt
 
-1. the feature still has ambiguity blockers after the planner phase
-2. repo-required prerequisite scaffolding is still missing after instruction bootstrap
-3. the same reviewer BLOCK set recurs after an automatic fix attempt
-
-Do not ask the user whether to continue between phases. Do not ask the user whether to
-run the resolved reviewer agent or perform status transitions.
+Do not ask user to continue between phases or approve transitions.
 
 ## Execution rules
 
-- **Always** read `spark.config.yaml` before planning or delegating work.
-- **Never hardcode `.spark` folder names.** All folder paths come from `spark.config.yaml` `spark.folders` with `{projectName}` resolved.
-- **Never hardcode agent names or reference paths.** Resolve from config.
-- Keep repo-wide discovery in the **context phase**. This coordinator does path/feature
-  resolution (Step 0 + Step 1) only; it does not re-scan the codebase.
-- Pass a compact execution brief plus explicit file paths to later phases instead of
-  pasting raw feature, architecture, ADR, code, or test content.
-- Trust the brief's `doc_snapshots` between phases. Re-read an on-disk doc only when
-  the caller just wrote to it (e.g. after editor agent transitions that changed
-  metadata you are about to report). Cache the post-transition status back into the
-  brief so downstream steps do not re-read again.
-- The implementer owns suite runs; cache the result in the brief's `suite_cache` so
-  the gate and reviewer do not re-run the suite when `code_sha` still matches.
-- Pass resolved folder paths and resolved reference paths from `spark.config.yaml` into every subagent invocation so sub-agents do not reconstruct paths from assumptions.
-- **Execution brief schema version**: Every brief must include `brief_schema_version: 3` as a top-level field. All phase agents must validate that `brief_schema_version` matches their expected version and halt with a clear message on mismatch. This prevents silent contract drift between coordinator, context, planner, implementer, and gate agents. The coordinator must reject any brief returned by a phase agent that is missing `brief_schema_version` or carries a version it does not recognize.
-- **Testplan counts are verified from disk**: The coordinator never trusts a phase agent's claim about testplan case counts. After any phase writes or modifies `{testplan-path}`, the coordinator reads the file from disk and mechanically counts test-name rows before proceeding.
+- **Use configured variables consistently** — pass to all invocations without further resolution.
+- **Validate paths exist** before invoking any phase agent.
+- **Keep repo discovery in context phase** — this coordinator only resolves paths; doesn't re-scan.
+- **Pass compact briefs with explicit paths** to later phases; don't paste raw content.
+- **Trust brief snapshots between phases** — re-read disk only after agent writes.
+- **Implementer owns suite runs** — cache in `suite_cache` so gate doesn't re-run.
+- **Execution brief schema version**: Every brief must include `brief_schema_version: 3`. All agents validate on input and halt on mismatch.
+- **Testplan counts verified from disk** — never trust agent claims; read and count test-name rows.
 
-## Step 0: Read config and resolve workflow assets
+## Step 1: Resolve target feature
 
-Read the sibling `spark.config.yaml` before any other work.
+Use `{docs-root}` from Variable Configuration.
 
-### Enabled check
+1. Resolve feature:
+   - `FEAT-NNN` or exact path → use file
+   - feature name → locate in `{feature-root}`
+   - `next` → first non-implemented `FEAT-*.md` by alphanumeric order
+   - derive `{feature-slug}` from filename after `FEAT-{NNN}-` and before `.md`
+2. Verify `**Status**` is `Approved`. If not, halt.
+3. Set `{project-root}` = `{repo-root}` (for inventory discovery)
+4. Set `{testplan-path}` = `{testplan-root}/FEAT-{NNN}-{feature-slug}.testplan.md`
 
-Read `spark.spark-tdd.enabled`. If `false`, abort:
+## Step 2: Build execution brief
 
-> "Spark TDD is disabled in `spark.config.yaml` (`spark.spark-tdd.enabled: false`); aborting."
+Invoke `{context-agent}` with all variables from Variable Configuration:
+`{repo-root}`, `{project-root}`, `{docs-root}`, `{projectName}`, `{feature-path}`, `{testplan-path}`, `{adr-root}`, `{testplan-root}`, `{instructions-root}`, `{scaffold-skill}`, `{brief-reference}`
 
-### Workflow resolution
-
-1. Read the `spark.spark-tdd.agents` block and find the entry matching the target workflow type (e.g. `dotnet-webapi`). Match by `type`, case-insensitive and trimmed.
-2. If no match, abort:
-   > "No TDD workflow configured for type `{type}`. Update `spark.config.yaml` `spark.spark-tdd.agents`. Aborting."
-3. From the matched entry, resolve:
-   - `{context-agent}` = `phases.context`
-   - `{planner-agent}` = `phases.planner`
-   - `{implementer-agent}` = `phases.implementer`
-   - `{gate-agent}` = `phases.gate`
-   - `{reviewer-agent}` = `reviewer`
-   - `{scaffold-skill}` = `scaffold`
-   - `{brief-reference}` = `references.brief`
-   - `{testplan-template-reference}` = `references.testplan-template`
-   - `{reviewer-checklist-reference}` = `references.reviewer-checklist`
-
-### Roots resolution
-
-Resolve `{instructions-root}` = `spark.spark-tdd.roots.instructions`.
-
-### Folder path resolution
-
-Folder paths are resolved from `spark.config.yaml` `spark.folders`. Each template contains `{projectName}` which the coordinator replaces with the actual project name.
-
-| Config key | Variable | Example (project = Mockery) |
-|---|---|---|
-| `spark.folders.root` | `{specs-root}` | `./.spark` |
-| `spark.folders.prd` | `{docs-root}` | `./.spark/Mockery` |
-| `spark.folders.feature` | `{feature-root}` | `./.spark/Mockery/feature` |
-| `spark.folders.adr` | `{adr-root}` | `./.spark/Mockery/adr` |
-| `spark.folders.testplan` | `{testplan-root}` | `./.spark/Mockery/testplan` |
-
-### Abort messages
-
-Surface verbatim and stop — do not fall back to a default:
-
-| Condition | Message |
-|---|---|
-| `spark.spark-tdd.enabled: false` | "Spark TDD is disabled in `spark.config.yaml` (`spark.spark-tdd.enabled: false`); aborting." |
-| No matching workflow type | "No TDD workflow configured for type `{type}`. Update `spark.config.yaml` `spark.spark-tdd.agents`. Aborting." |
-| `spark.config.yaml` missing or unreadable | "Cannot resolve agents or folder paths because `spark.config.yaml` is missing or unreadable. Aborting." |
-| Resolved reference file missing | "Cannot read resolved reference `{key}` at `{path}`. Verify that `spark.config.yaml` `spark.spark-tdd.agents.{workflow}.references.{key}` points to an existing file. Aborting." |
-
-## Step 1: Resolve the target feature
-
-Use the resolved `{docs-root}` from Step 0 (not a hardcoded `.spark/` path). Do not search subdirectories, CWD, or any other location.
-
-1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 5.
-2. Run `git rev-parse --show-toplevel` and capture `{repo-root}`. If it fails, ask the
-   user for the repository root.
-3. Determine `{projectName}` from the user's request. If ambiguous, ask.
-4. Set `{docs-root}` by resolving `spark.folders.prd` from `spark.config.yaml` with `{projectName}` replaced.
-5. Resolve the target feature:
-   - specific `FEAT-NNN` or exact path -> use that file
-   - feature name -> locate the matching file under `{feature-root}` (resolved from `spark.folders.feature`)
-   - `next` -> first `FEAT-*.md` in alphanumeric order whose status is not `Implemented`
-   - derive `{feature-slug}` from the resolved filename segment after `FEAT-{NNN}-`
-     and before `.md`
-6. Read the feature metadata. If `**Status**` is not `Approved`, stop:
-   > "⛔ [FEAT-NNN] has Status: {status}. Set Status to `Approved` in
-   > `{feature-path}`, then run the resolved TDD agent again."
-7. Set `{project-root}` = `{repo-root}` (the repository root, not the spec folder). The
-   context phase uses `{project-root}` for solution/project inventory discovery.
-8. Set `{testplan-path}` to `{testplan-root}/FEAT-{NNN}-{feature-slug}.testplan.md` (using `{testplan-root}` resolved from `spark.folders.testplan`).
-
-## Step 2: Build the execution brief
-
-Invoke the resolved `{context-agent}` with:
-
-- `{repo-root}`
-- `{project-root}`
-- `{docs-root}`
-- `{projectName}`
-- `{feature-path}`
-- `{testplan-path}`
-- `{adr-root}` — resolved from `spark.folders.adr`
-- `{testplan-root}` — resolved from `spark.folders.testplan`
-- `{instructions-root}` — resolved from `spark.spark-tdd.roots.instructions`
-- `{scaffold-skill}` — resolved from the matched workflow entry's `scaffold`
-- `{brief-reference}` — resolved from the matched workflow entry's `references.brief`
-
-Require a fenced YAML block whose top-level fields are:
-
+Expect YAML:
 ```yaml
 phase: context
 result: ready|halt
-execution_brief:
-  ...
+execution_brief: {...}
 ```
 
-Handle the result:
-
-- `halt` -> surface the message and stop
-- `ready` with `structural_check.requires_instruction_bootstrap: true` -> bootstrap
-  repo instructions, then re-run the context phase once
-- `ready` with non-empty `structural_check.prerequisites_missing` -> stop with the
-  missing prerequisite list
-- `ready` with non-empty `structural_check.deliverable_scaffold` -> keep those items
-  in scope for implementation
+Handle:
+- `halt` → surface error and stop
+- `ready` + `requires_instruction_bootstrap: true` → bootstrap, re-run context
+- `ready` + `prerequisites_missing` → stop with missing list
+- `ready` + `deliverable_scaffold` → keep in scope
 
 ### Instruction bootstrap
 
-Instruction bootstrap is **synchronous inside the context phase** (preferred path): when
-the context phase detects a missing instructions file, it invokes `{scaffold-skill}`
-itself, reloads, and emits a single brief. The coordinator should rarely see
-`requires_instruction_bootstrap: true`.
+Preferred: context phase bootstraps internally. If it returns `requires_instruction_bootstrap: true`:
 
-If the context phase did return `requires_instruction_bootstrap: true` (e.g. the
-scaffold needs user input), fall back to:
-
-1. Ask for `projectNamespaceName` if not already known.
-2. Invoke `{scaffold-skill}` via `runSubagent` **without** setting `agentName`.
-   `{scaffold-skill}` is a **skill name**, not a registered agent. Pass the skill's
-   SKILL.md file path (resolved from `{skills-root}/{scaffold-skill}/SKILL.md`) in the
-   prompt so the generic subagent can read and follow the skill instructions. Also pass
-   `{instructions-root}` (resolved from `spark.spark-tdd.roots.instructions`) so the
-   skill writes to the resolved path.
-3. Wait for completion. After successful scaffold, the coordinator may **patch the
-   existing brief** directly — set `structural_check.requires_instruction_bootstrap: false`,
-   clear scaffolded items from `structural_check.prerequisites_missing`, and update
-   `paths` — rather than re-invoking the full context phase. Re-invoke `{context-agent}`
-   only when the scaffold materially changed the project structure in ways the brief
-   cannot predict (e.g. new project references, changed namespaces).
-4. If re-invoked, the brief returned on the second pass must not set
-   `requires_instruction_bootstrap: true`.
+1. Ask for `projectNamespaceName` if unknown
+2. Invoke `{scaffold-skill}` via `runSubagent` without `agentName`. Pass:
+   - SKILL.md from `{skills-root}/{scaffold-skill}/SKILL.md`
+   - `{instructions-root}` for output path
+3. After scaffold succeeds, patch brief: set `requires_instruction_bootstrap: false`, clear `prerequisites_missing` items, update `paths`
+4. Re-invoke `{context-agent}` only if scaffold changed project structure materially (new project refs, namespaces, etc.)
+5. Second pass brief must not set `requires_instruction_bootstrap: true`
 
 ## Step 3: Planner phase
 
-Invoke the resolved `{planner-agent}` with the current execution brief, `{feature-path}`,
-`{testplan-path}`, `{testplan-root}`, and the resolved reference paths:
-- `{brief-reference}` — resolved from the matched workflow entry's `references.brief`
-- `{testplan-template-reference}` — resolved from the matched workflow entry's `references.testplan-template`
+Invoke `{planner-agent}` with execution brief, `{feature-path}`, `{testplan-path}`, `{testplan-root}`, and references from Variable Configuration: `{brief-reference}`, `{testplan-template-reference}`
 
-Expected return block:
-
+Expect:
 ```yaml
 phase: planner
 result: ready|halt
-requires_testplan_approval: true|false
-execution_brief:
-  ...
+execution_brief: {...}
 ```
 
-Handle the result:
+Handle:
+- `halt` → surface ambiguity and stop
+- `ready` → verify testplan, then approve
 
-- `halt` -> surface the ambiguity report and stop
-- `ready` -> verify the testplan, then approve it
+**Post-planner checks**: Read `{testplan-path}` and verify:
+1. `**Plan baseline**` case count matches test-name rows
+2. `**Plan baseline**` AC count matches `### AC-NN` headings
+3. All AC IDs from feature appear as headings
 
-### Post-planner verification
-
-Before approving, the coordinator must read `{testplan-path}` from disk and verify:
-
-1. The `**Plan baseline**` case count matches the number of test-name rows in the body
-   tables (count rows containing `FEAT` in each AC table).
-2. The `**Plan baseline**` AC count matches the number of `### AC-NN` headings.
-3. Every AC ID from the feature spec appears as an `### AC-NN` heading.
-
-If any check fails, return to `{planner-agent}` with the specific discrepancy. Do not
-approve a testplan with mismatched counts — this guarantees gate failure.
-
-Once verified, the testplan is ready for the implementer phase.
+If any fail, return to `{planner-agent}` with discrepancy. Mismatched counts guarantee gate failure.
 
 ## Step 4: Implementer phase
 
-Invoke the resolved `{implementer-agent}` with the current execution brief and the approved
-`{testplan-path}`.
+Invoke `{implementer-agent}` with execution brief and approved `{testplan-path}`.
 
-### Brief size management
+**TDD rule**: Strict two-pass. Red phase first (test stubs, failing tests, compile-time stubs). Green phase second (min implementation to pass tests). Never combine in one pass.
 
-If the execution brief YAML plus the testplan content exceed approximately 150 lines of
-prompt payload, split the implementer invocation into **batched AC groups** (e.g. AC-1
-through AC-4, then AC-5 through AC-8). Each batch carries the full brief but only the
-relevant AC subset from the testplan. Merge the returned `suite_cache`,
-`coverage_targets`, and `notes` from each batch into the coordinator's brief before
-proceeding.
+**Coverage map requirement**: Implementer must add `// FEAT-NNN: ... AC coverage map:` headers at top of test files and implementation files. Union of AC IDs across files must exactly equal testplan AC set. Missing headers = gate BLOCK.
 
-### Implementer fallback
+**Brief sizing**: If brief + testplan exceed ~150 lines, batch by AC groups (e.g., AC-1..4, then AC-5..8). Merge results before gate.
 
-If the implementer agent returns an error (e.g. response length limit exceeded) or no
-response, the coordinator implements the feature directly using the brief and testplan.
-This is a fallback, not the preferred path — always try the resolved agent first.
+**Fallback**: If implementer errors or times out, implement directly using brief + testplan following strict two-pass TDD.
 
-**The fallback MUST follow strict two-pass TDD. Skipping the red phase is a protocol
-violation even in fallback mode.**
-
-#### Fallback pass 1: Red
-
-1. Write ONLY test stubs, fake/mock helpers, and failing test methods. Do not write
-   any production implementation code in this pass.
-2. Create minimal importable stubs (empty classes, `NotImplementedException` throws)
-   so the test project compiles.
-3. Run the full suite and verify a genuine red state — at least one test must fail
-   against a stub, zero tests may pass accidentally.
-4. If the red state cannot be achieved, halt. Do not proceed to pass 2.
-
-#### Fallback pass 2: Green
-
-1. Work one failing test at a time. Write the minimum implementation code that makes
-   the current target test pass.
-2. Run the suite after each implementation change.
-3. Continue until all planned tests are green.
-4. Perform any in-scope refactoring (Step 5 of the implementer protocol).
-
-The coordinator MUST NOT write implementation code and tests in the same pass. Tests
-first, verified red, then implementation. There is no shortcut that combines both
-passes into one, even when the feature is small or the coordinator has full context.
-
-### Coverage map header reminder
-
-The coordinator's prompt to the implementer must include this explicit reminder:
-
-> Gate checks T03, C01, C02, C04 require `// FEAT-NNN: ... AC coverage map:` comment
-> blocks at the top of the test file AND near the top of every implementation file. The
-> union of AC IDs across implementation file headers must equal the testplan AC set
-> exactly. These are BLOCK-severity checks — missing headers guarantee gate failure.
-
-The execution brief should include `gate_requirements.coverage_map_headers: required` so
-the implementer can read this requirement structurally.
-
-Expected return block:
-
+Expect manifest:
 ```yaml
 phase: implementer
 result: implemented|replan|halt
-reason:
 manifest:
   test_files: []
   implementation_files: []
   suite_passed: 0
   suite_failed: 0
   suite_command: ""
-  refactor_changes: []
-  broken_refactors: []
-  adr_candidates: []
-  follow_on_tests: []
 ```
 
-### Post-implementer brief reconstruction
+After `result: implemented`, reconstruct brief:
+- `coverage_targets.test_files/implementation_files` from manifest
+- `suite_digest` and `suite_cache` from manifest
+- `notes` from manifest arrays
 
-The implementer returns a slim manifest, not the full execution brief. After the
-implementer completes with `result: implemented`, the coordinator reconstructs the
-brief's mutable fields from the manifest and disk:
-
-1. Set `coverage_targets.test_files` = `manifest.test_files`
-2. Set `coverage_targets.implementation_files` = `manifest.implementation_files`
-3. Set `suite_digest.passed` = `manifest.suite_passed`
-4. Set `suite_digest.failed` = `manifest.suite_failed`
-5. Set `suite_digest.last_run_command` = `manifest.suite_command`
-6. Set `suite_cache.run_command` = `manifest.suite_command`
-7. Set `suite_cache.result` = `pass` if `manifest.suite_failed == 0`, else `fail`
-8. Set `suite_cache.last_run_at` to current timestamp
-9. Set `suite_cache.tracked_files` = union of `manifest.test_files` and
-   `manifest.implementation_files`
-10. Copy `manifest.refactor_changes`, `manifest.broken_refactors`,
-    `manifest.adr_candidates`, and `manifest.follow_on_tests` into `notes`
-
-For `result: replan` or `result: halt`, skip reconstruction and handle as before.
-
-Handle the result:
-
-- `halt` -> surface the blocker and stop
-- `replan` -> re-run the
-  `{planner-agent}`, then re-enter `{implementer-agent}`
-- `implemented` -> continue to the gate phase
-
-Only use the `replan` path when AC or case counts changed. Cosmetic renames with the
-same case count do not need a revert/approve cycle.
+Handle:
+- `halt` → surface blocker and stop
+- `replan` → re-run planner (only if AC/case counts changed)
+- `implemented` → continue to gate
 
 ## Step 5: Gate phase
 
-### Coordinator pre-flight checks
+**Pre-flight checks** (local, before invoking gate agent):
+1. Read `{testplan-path}`, count test-name rows, verify match `**Plan baseline**`
+2. Read first 50 lines of each test file: verify `// FEAT-NNN: ... AC coverage map:` header exists
+3. Read first 10 lines of each implementation file: verify coverage map header exists
 
-Before invoking the gate agent, the coordinator runs these local checks to catch obvious
-failures without burning a full subagent invocation:
+If any fail, fix before gate. Missing headers guarantee BLOCK.
 
-1. **Testplan baseline match**: Read `{testplan-path}` from disk. Count test-name rows
-   in the body tables. Verify the count matches `**Plan baseline**`. If not, fix the
-   testplan or return to the implementer — do not invoke the gate.
-2. **Test file coverage map exists**: Read the first 50 lines of each file in
-   `coverage_targets.test_files`. Verify each begins with
-   `// FEAT-NNN: ... AC coverage map:`. If missing, add the header before invoking the
-   gate.
-3. **Implementation file coverage maps exist**: Read the first 10 lines of each file in
-   `coverage_targets.implementation_files`. Verify each has a
-   `// FEAT-NNN: ... AC coverage map:` comment block. If missing, add the header before
-   invoking the gate.
+Invoke `{gate-agent}` with brief, `{feature-path}`, `{testplan-path}`, `{reviewer-checklist-reference}`, `{reviewer-agent}`
 
-These pre-flight checks are a **subset** of the full gate/reviewer checklist. They exist
-to avoid wasting a gate cycle on known-failing preconditions.
+**Key instruction**: Gate agent must read `{testplan-path}` from disk and count test rows; file on disk is authoritative.
 
-### Gate invocation
-
-Invoke the resolved `{gate-agent}` with the current execution brief, `{feature-path}`,
-`{testplan-path}`, and the resolved reference and agent paths:
-- `{reviewer-checklist-reference}` — resolved from the matched workflow entry's `references.reviewer-checklist`
-- `{reviewer-agent}` — resolved from the matched workflow entry's `reviewer`
-
-Include an explicit instruction in the gate prompt:
-
-> You MUST read `{testplan-path}` from disk and mechanically count test-name rows in
-> each AC table. Do NOT rely on the execution brief's `expected_case_count` or any
-> summary passed in this prompt. If your row count differs from the brief, the file on
-> disk is authoritative.
-
-Expected return block:
-
+Expect:
 ```yaml
 phase: gate
 result: pass|fail|override
 gate: PASS|FAIL|OVERRIDE|PRECHECK_FAIL
 block_ids: []
-warn_ids: []
-findings_markdown: |
-  ...
-execution_brief:
-  ...
+findings_markdown: ...
 ```
 
-### Gate retry rules
-
-Handle the result:
-
-- `pass` or `override` -> continue to Step 6
-- `fail` with a strictly smaller BLOCK set than the previous attempt -> update the brief,
-  pass the latest findings back into `{implementer-agent}`, then re-run `{gate-agent}`
-- `fail` with the same or worse BLOCK set -> render the latest findings under
-  `## Reviewer findings - unresolved after auto-fix`, and stop
-
-Local gate failures (`PRECHECK_FAIL`) are treated the same as reviewer BLOCK failures:
-retry only when the identifier set changed in a way that shows progress.
-
-### Gate retry ceiling
-
-The coordinator must not invoke the gate more than **3 times** for a single feature. If
-the gate has not reached `PASS` after 3 attempts, halt with the latest findings and let
-the user intervene. This prevents unbounded retry loops when a gate agent repeatedly
-misreads files or hallucinates content.
+**Retry logic**:
+- `pass` or `override` → Step 6
+- `fail` + smaller BLOCK set → update brief, re-run implementer, re-run gate
+- `fail` + same/worse BLOCK set → render findings, halt
+- Local failures (PRECHECK_FAIL) treated like BLOCK failures; retry only if progress
+- **Max 3 gate invocations** per feature. After 3, halt and let user intervene.
 
 ## Step 6: Final status transitions
 
-Only after the gate returns `PASS` or `OVERRIDE`:
+After gate `PASS` or `OVERRIDE`:
+1. Invoke `{feature-editor-agent}` to transition `{feature-path}` status to `Implemented`
+2. Verify success. If rejected, surface and halt.
 
-1. Resolve the feature editor agent from `spark.config.yaml` `spark.spark-sdd.agents` where `type: feature` (the `editor` field).
-2. Invoke the resolved feature editor agent to transition `{feature-path}` status to `Implemented`.
-3. Verify the editor agent reports success. If the transition is rejected, surface the rejection and stop. Do not work around it.
-
-Do not hand-edit `**Status**`, `**Version**`, or `**Last Updated**`.
+Do not hand-edit `**Status**`, `**Version**`, `**Last Updated**`.
 
 ## Step 7: Final summary
 
-The feature editor transition in Step 6 returns the post-transition status. Cache
-those results into the brief's `doc_snapshots.feature.status` so we do not re-read the file.
-
-Report from the cached snapshots (not from memory of earlier phases):
-
-- feature status
-- testplan status
-- suite counts from the execution brief
+Cache editor's result into brief's `doc_snapshots.feature.status`. Report from cached snapshots:
+- Feature status, testplan status
+- Suite counts (passed/failed)
 - AC coverage summary
-- structural gaps, if any
-- WARN findings from the gate phase
-- any implementation overrides used
-- refactor changes
-- broken refactors
-- ADR candidates
-- remaining ambiguities
-- suggested follow-on tests
+- Structural gaps
+- WARN findings
+- Implementation overrides
+- Refactor changes, broken refactors
+- ADR candidates, follow-on tests
 
-Never claim `Implemented` unless the status reported by the feature editor agent
-(and captured into `doc_snapshots`) is `Implemented`. If the agent's result
-was ambiguous or did not return a status, re-read the file once — but this is the
-exception, not the rule.
+Never claim `Implemented` unless editor confirms. If ambiguous, re-read file once (exception, not rule).
 
 ## Appendix: Execution brief schema
 
@@ -509,28 +322,15 @@ notes:
 
 ### Schema versioning rules
 
-- The coordinator sets `brief_schema_version: 3` when constructing the initial brief.
-- Phase agents must check `brief_schema_version` at the top of their processing. If the
-  version is missing or unrecognized, halt with:
-  > "Execution brief schema version mismatch: expected 3, got {version}. Update the
-  > coordinator or phase agent to align on the same schema version."
-- When the schema evolves, bump the version number and update this appendix. All phase
-  agents must be updated in lockstep.
+- Coordinator sets `brief_schema_version: 3` on initial brief
+- Agents validate version on input; halt on mismatch with: "Execution brief schema version mismatch: expected 3, got {version}"
+- When schema evolves, bump version and update appendix; all agents must update in lockstep
 
 ### Implementer return contract
 
-The implementer agent returns a slim manifest (under 50 lines), not the full execution
-brief. This eliminates the output size pressure that caused response-limit failures.
+Implementer returns slim manifest (not full brief):
+- `test_files`, `implementation_files` = absolute paths written
+- `suite_passed`, `suite_failed`, `suite_command` = final results
+- `refactor_changes`, `broken_refactors`, `adr_candidates`, `follow_on_tests` = notes
 
-The manifest contains:
-- `test_files` and `implementation_files` — absolute paths of all files written
-- `suite_passed`, `suite_failed`, `suite_command` — final suite run results
-- `refactor_changes`, `broken_refactors`, `adr_candidates`, `follow_on_tests` — notes
-
-The coordinator reconstructs `suite_cache`, `suite_digest`, `coverage_targets`, and
-`notes` from the manifest plus disk reads (see *Post-implementer brief reconstruction*
-in Step 4). The gate and reviewer consume the reconstructed brief, not the implementer's
-raw output.
-
-File contents are written to disk during implementation. The coordinator, gate, and
-reviewer read them from disk — never from the implementer's response.
+Coordinator reconstructs `suite_cache`, `suite_digest`, `coverage_targets`, `notes` from manifest + disk reads. Gate and reviewer consume reconstructed brief, not raw output. File contents always from disk, never from agent response.
