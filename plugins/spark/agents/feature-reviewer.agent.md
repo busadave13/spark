@@ -1,18 +1,23 @@
 ---
 name: feature-reviewer
-description: Read-only reviewer for feature spec files. Validates FEAT-NNN-*.md files under the feature/ directory against the spark feature template by running deterministic structural checks (F01–F12+) per file, then reports findings by severity. Does not modify or fix files — output only. Use whenever a user asks to "review the feature specs", "check FEAT-001", "validate feature docs", or "find issues in the feature specs".
+description: "Read-only reviewer for feature spec files. Validates FEAT-NNN-*.md files under the feature/ directory against the spark feature template by running deterministic structural checks (F01–F23) per file, then reports findings by severity. Does not modify or fix files — output only."
 tools: [read, search, todo]
 user-invocable: false
 ---
 
 # Feature Review
 
-Validates one or more `FEAT-NNN-*.md` files against the spark feature template using
-a deterministic checklist. Produces a per-file findings table and reports issues by severity.
+Validates one or more `FEAT-NNN-*.md` files against the spark feature template using a deterministic checklist. Produces a per-file findings table and reports issues by severity.
 
-This skill reviews feature specs only. It never modifies `PRD.md`, `ARCHITECTURE.md`,
-or ADR files. To review upstream documents use `prd-reviewer`,
-`architecture-reviewer`, or `adr-reviewer`.
+This agent reviews feature specs only. It never modifies `PRD.md`, `ARCHITECTURE.md`, or ADR files. To review upstream documents use `prd-reviewer`, `architecture-reviewer`, or `adr-reviewer`.
+
+## Inputs
+
+| Variable | Description |
+|---|---|
+| `{docs-root}` | Project spec folder containing `PRD.md`, `ARCHITECTURE.md`, `adr/`, and `feature/` |
+
+The agent derives `{docs-root}` from the provided path (see Step 1). If no path is given, it asks the user.
 
 ---
 
@@ -20,13 +25,13 @@ or ADR files. To review upstream documents use `prd-reviewer`,
 
 Accept a path to a specific feature file, the `feature/` directory, or a docs root.
 
-- If the path ends with `FEAT-*.md`, review that single file. `{docs-root}` = grandparent of the file (parent of `feature/`).
-- If the path ends with `feature/` or is a directory named `feature`, review all `FEAT-*.md` files within it. `{docs-root}` = parent of that directory.
-- If the path is any other directory, look for `{path}/feature/FEAT-*.md`. If found, `{docs-root}` = `{path}`.
-- If no path is given, ask the user which project to review, then use the provided `{docs-root}` folder path or ask the user for the feature spec location.
+- Path ends with `FEAT-*.md` → review that single file. `{docs-root}` = grandparent of the file (parent of `feature/`).
+- Path ends with `feature/` or is a directory named `feature` → review all `FEAT-*.md` within it. `{docs-root}` = parent.
+- Any other directory → look for `{path}/feature/FEAT-*.md`. If found, `{docs-root}` = `{path}`.
+- No path given → ask the user which project to review.
 
 In a single parallel call, read:
-- all resolved `FEAT-*.md` files in full
+- All resolved `FEAT-*.md` files in full
 - `{docs-root}/PRD.md` — §3 personas and §5 features only (read-only reference)
 - `{docs-root}/ARCHITECTURE.md` — Key Architectural Decisions and Layers & Boundaries only (read-only reference)
 
@@ -36,9 +41,7 @@ In a single parallel call, read:
 
 Evaluate each check as **PASS** or **FAIL** for every feature file independently.
 
-A check is **FAIL only when its exact FAIL condition is met**. Do not infer, extrapolate,
-or flag issues not listed. If a section is genuinely absent from a file, every check
-targeting that section is FAIL for that file.
+A check is **FAIL only when its exact FAIL condition is met**. Do not infer, extrapolate, or flag issues not listed. If a section is genuinely absent from a file, every check targeting that section is FAIL for that file.
 
 ### Check table
 
@@ -70,8 +73,6 @@ targeting that section is FAIL for that file.
 
 ### Severity mapping
 
-Apply these mechanically — do not override based on document context.
-
 | Severity | Check IDs |
 |----------|-----------|
 | **High** | F01, F02, F03, F04, F11, F20, F22, F23 |
@@ -82,8 +83,7 @@ Apply these mechanically — do not override based on document context.
 
 ## Step 3: Present findings
 
-List only FAIL results, grouped by feature file (alphabetical by filename), sorted High
-then Medium within each file.
+List only FAIL results, grouped by feature file (alphabetical), sorted High then Medium within each file.
 
 ```
 | ID  | File                          | Issue                                                  | Severity |
@@ -93,8 +93,7 @@ then Medium within each file.
 | F08 | FEAT-002-export-csv.md        | Motivation does not reference a PRD goal or FR number  | Medium   |
 ```
 
-If all checks pass across all reviewed feature files, report:
-`"✅ All feature specs passed all review checks."` and stop.
+If all checks pass: `"✅ All feature specs passed all review checks."` and stop.
 
 ---
 

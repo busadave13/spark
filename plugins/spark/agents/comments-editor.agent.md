@@ -5,224 +5,127 @@ tools: [read, edit, search, todo]
 user-invocable: false
 ---
 
-# Comments Resolver
+## Orchestrator Inputs
 
-Discovers `.comments.json` sidecar files for a given spec type and project, applies each
-comment's instructions to the target document, deletes the sidecar, and returns a structured
-resolution summary.
+All inputs provided by the Spark orchestrator. Do not hardcode folder names.
+
+| Parameter | Required | Description | Example |
+|---|---|---|---|
+| `{spec-type}` | Yes | `prd`, `architecture`, `adr`, or `feature` | `prd` |
+| `{project-name}` | Yes | Project name | `Mockery` |
+| `{docs-root}` | Yes | Project spec root | `.spark/Mockery` |
+| `{specs-root}` | Yes | Specs root | `.spark` |
+| `{adr-root}` | If `adr` | ADR folder | `.spark/Mockery/adr` |
+| `{feature-root}` | If `feature` | Feature folder | `.spark/Mockery/feature` |
+| `{target-doc}` | No | Single document filename to target | `FEAT-002-auth.md` |
 
 ---
 
-## Step 1: Resolve inputs and discover sidecar
+# Comments Resolver
 
-### 1a — Accept orchestrator-provided parameters
+Discovers `.comments.json` sidecars, applies each comment's instruction to the target
+document, deletes the sidecar, and returns a resolution summary.
 
-When invoked by the Spark orchestrator, this agent receives the following input parameters:
+---
 
-| Parameter | Description | Example |
-|---|---|---|
-| `{spec-type}` | Document type: `prd`, `architecture`, `adr`, `feature` | `prd` |
-| `{project-name}` | Project name | `Mockery` |
-| `{docs-root}` | Resolved project spec root | `.spark/Mockery` |
-| `{specs-root}` | Resolved specs root | `.spark` |
-| `{adr-root}` | Resolved ADR folder (only when `{spec-type}` is `adr`) | `.spark/Mockery/adr` |
-| `{feature-root}` | Resolved feature folder (only when `{spec-type}` is `feature`) | `.spark/Mockery/feature` |
-| `{target-doc}` | (Optional) Specific document filename when the user targets a single document | `FEAT-002-auth.md` |
+## Step 1: Discover sidecar
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode
-`.spark` folder names. If any required parameter is missing and no document path was provided
-for direct invocation, ask the orchestrator/user before proceeding.
+Derive document + sidecar paths from `{spec-type}`:
 
-### 1b — Discover the target document and sidecar
-
-Derive the document path and search for the matching `.comments.json` sidecar based on
-`{spec-type}` and the resolved folder paths:
-
-| Spec type | Document path | Sidecar search |
+| Spec type | Document | Sidecar |
 |---|---|---|
 | `prd` | `{docs-root}/PRD.md` | `{docs-root}/PRD.comments.json` |
 | `architecture` | `{docs-root}/ARCHITECTURE.md` | `{docs-root}/ARCHITECTURE.comments.json` |
-| `adr` | `{adr-root}/ADR-*.md` | Search `{adr-root}/` for `ADR-*.comments.json` |
-| `feature` | `{feature-root}/FEAT-*.md` | Search `{feature-root}/` for `FEAT-*.comments.json` |
+| `adr` | `{adr-root}/ADR-*.md` | `{adr-root}/ADR-*.comments.json` |
+| `feature` | `{feature-root}/FEAT-*.md` | `{feature-root}/FEAT-*.comments.json` |
 
-**Discovery rules:**
-
-1. For `prd` and `architecture`: derive the single expected document and sidecar path directly.
-2. For `adr` and `feature`: if `{target-doc}` is provided, resolve only that document's sidecar
-   (e.g. `{target-doc}` = `FEAT-002-auth.md` → look for `FEAT-002-auth.comments.json` in
-   `{feature-root}`). If `{target-doc}` is not provided, search the appropriate subfolder for
-   all `*.comments.json` files matching the pattern.
-3. If **multiple** `.comments.json` files are found (and no `{target-doc}` was specified),
-   list them and process each in sequence. For each sidecar, derive the target document from
-   the sidecar's `doc` field as the source of truth; use the sidecar filename as a fallback
-   if `doc` is absent. Report any mismatch between `doc` and filename.
-4. If **no** `.comments.json` is found, report that there are no pending comments for the
-   given spec type and project, and stop.
-5. If the **document** referenced by a sidecar does not exist, report it and skip that sidecar.
-
-### 1c — Fallback for direct invocation
-
-If invoked directly (not via the orchestrator) **with an explicit document path** instead of
-orchestrator parameters, fall back to legacy behavior: use the document path as the anchor,
-derive the sidecar path by replacing the extension with `.comments.json`, and verify both
-files exist before proceeding. This fallback applies only when a document path is provided
-and **none** of the orchestrator parameters (`{spec-type}`, `{docs-root}`) are present.
+- For `prd`/`architecture`: derive single path directly.
+- For `adr`/`feature`: if `{target-doc}` is set, resolve only that sidecar; otherwise search
+  the folder for all matching `*.comments.json` files.
+- Multiple sidecars → process sequentially. Use sidecar `doc` field as source of truth for
+  the target document; fall back to sidecar filename if `doc` is absent.
+- No sidecar found → report no pending comments and stop.
+- Document missing → skip that sidecar and report it.
 
 ---
 
-## Step 2: Load document and sidecar
+## Step 2: Load and parse
 
-For each discovered document + sidecar pair, read both in a single parallel call:
-- The target document (full content)
-- The `.comments.json` sidecar
-
-The sidecar structure is:
+Read the target document and its `.comments.json` sidecar in parallel. Sidecar schema:
 
 ```json
 {
   "doc": "PRD.md",
   "version": "3.0",
-  "comments": [
-    {
-      "id": "<uuid>",
-      "anchor": {
-        "selectedText": "<exact text that was highlighted>",
-        "textContext": {
-          "prefix": "<text immediately before the selection>",
-          "suffix": "<text immediately after the selection>"
-        },
-        "markdownRange": {
-          "startOffset": 0,
-          "endOffset": 0
-        }
-      },
-      "author": "<name>",
-      "body": "<the instruction to apply>",
-      "created": "<ISO timestamp>",
-      "edited": null
-    }
-  ]
+  "comments": [{
+    "id": "<uuid>",
+    "anchor": {
+      "selectedText": "<highlighted text>",
+      "textContext": { "prefix": "...", "suffix": "..." },
+      "markdownRange": { "startOffset": 0, "endOffset": 0 }
+    },
+    "author": "<name>",
+    "body": "<instruction to apply>",
+    "created": "<ISO timestamp>",
+    "edited": null
+  }]
 }
 ```
 
-Every comment in the `comments` array is an active, unresolved comment — process all of them.
-There is no `status` field and no `thread` array; each comment carries a single instruction in
-its top-level `body` field.
+Every entry in `comments` is unresolved — process all. No `status` field or `thread` array
+exists; each comment has a single instruction in `body`.
 
 ---
 
 ## Step 3: Locate and apply each comment
 
-For each open comment, work through these steps in order:
+For each comment:
 
-### 3.1 — Locate the passage
-
-Use the `anchor` to find the exact location in the document:
-
-1. Search for `anchor.selectedText` in the document.
-2. If found in multiple places, use `textContext.prefix` and `textContext.suffix` to identify
-   the correct occurrence — the right one has the prefix immediately before it and the suffix
-   immediately after.
-3. If the exact `selectedText` is not found (e.g. the document was edited since the comment was
-   written), use the prefix and suffix as context to find the closest matching passage and
-   apply the instruction to that area. Note the approximation in your report.
-4. If the passage cannot be located at all, skip this comment and report it to the user.
-
-### 3.2 — Interpret the instruction
-
-Read the comment's `body` field — this is the reviewer's instruction. Interpret it naturally.
-Common examples:
-
-| Comment body | What to do |
-|---|---|
-| "Remove this bullet point" | Delete the bullet and its text |
-| "Clarify this sentence" | Rewrite the sentence for clarity |
-| "Add an example here" | Insert a concrete example after the passage |
-| "This is wrong — change to X" | Replace the passage with X |
-| "Move this to the Non-Goals section" | Cut from current location, paste under Non-Goals |
-| "Expand this into a table" | Convert the passage to a Markdown table |
-
-Use the full document context (section headings, surrounding paragraphs) to make the change
-coherent. The goal is to apply the reviewer's intent, not just mechanically follow the literal
-words.
-
-If the instruction is ambiguous or conflicts with another part of the document, apply the most
-sensible interpretation and note it in your report.
-
-### 3.3 — Apply the change
-
-Edit the document in place. Make the minimum change needed to satisfy the instruction — do not
-rewrite surrounding content that was not targeted.
+1. **Locate**: search for `anchor.selectedText`. Disambiguate with `prefix`/`suffix` if
+   multiple matches. If exact text is missing, use prefix/suffix to find the closest passage
+   and note the approximation. If unlocatable, skip and report.
+2. **Interpret**: read `body` as a natural-language instruction. Apply the reviewer's intent
+   using full document context — don't just follow literal words. Note ambiguous
+   interpretations in the report.
+3. **Apply**: edit in place with the minimum change needed. Do not rewrite untargeted content.
+   Confirm with user before deleting an entire section.
 
 ---
 
-## Step 4: Report and clean up
+## Step 4: Clean up sidecar
 
-After processing all comments for a document:
+- All resolved/approximated → delete sidecar (no confirmation needed).
+- Some skipped → rewrite sidecar with only the skipped comments.
+- All skipped → leave sidecar unchanged.
 
-- If **all comments were resolved** (or approximated), delete the `.comments.json` sidecar
-  immediately — do not ask the user for confirmation.
-- If **some comments were skipped**, rewrite the `.comments.json` sidecar to contain only the
-  skipped comments (preserving their original structure) so they are not lost. Report the
-  skipped comments in the summary.
-- If **all comments were skipped**, leave the sidecar unchanged.
+---
 
-### Structured resolution summary
+## Step 5: Bump version
 
-Return a structured summary for each document processed. This summary is returned to the
-orchestrator for relay to the user.
+If any comments were applied:
+1. Increment `**Version**` minor digit (`1.0`→`1.1`, `1.9`→`2.0`).
+2. Set `**Last Updated**` to today's date.
+
+Skip if no comments were applied.
+
+---
+
+## Step 6: Return summary
+
+Return one summary block per document processed:
 
 ```
 ## Comment Resolution Summary
 
-**Document**: {document-path}
-**Spec Type**: {spec-type}
-**Project**: {project-name}
+**Document**: {document-path} | **Spec Type**: {spec-type} | **Project**: {project-name}
 
 | Status | Comment ID | Selected Text | Resolution |
 |---|---|---|---|
-| ✅ Resolved | {id-short} | "{selectedText}" | {brief description of change} |
-| ⚠️ Approximated | {id-short} | "{selectedText}" | {description + approximation note} |
-| ❌ Skipped | {id-short} | "{selectedText}" | {reason passage could not be located} |
+| ✅ Resolved | {id-short} | "{selectedText}" | {brief description} |
+| ⚠️ Approximated | {id-short} | "{selectedText}" | {description + note} |
+| ❌ Skipped | {id-short} | "{selectedText}" | {reason} |
 
 **Totals**: N resolved, N approximated, N skipped of N total
-**Sidecar**: Deleted / Rewritten with N remaining comments / Unchanged
+**Sidecar**: Deleted / Rewritten with N remaining / Unchanged
 **Version bumped**: X.Y → X.Z
 ```
-
-If multiple documents were processed (e.g. multiple ADRs), return one summary block per
-document.
-
----
-
-## Step 5: Bump document version
-
-After applying comment changes and deleting the sidecar, bump the target document's version
-to reflect the modifications.
-
-1. Read the document's `**Version**` header field.
-2. Increment the minor digit by 1. After `X.9`, roll to `(X+1).0`
-   (e.g. `1.0` → `1.1`, `1.9` → `2.0`).
-3. Update `**Last Updated**` to today's date.
-4. Reset `**Status**` to `Draft`.
-
-If **no comments were applied** (all were skipped or the array was empty), do not bump.
-
----
-
-## Edge cases
-
-- **Empty `comments` array**: tell the user there are no comments to resolve and delete the
-  sidecar file.
-- **Multiple sidecars for same spec type** (ADR/feature): process each in sequence. Return
-  a separate summary block for each document.
-- **Single-doc targeting** (`{target-doc}` provided): resolve only that document's sidecar.
-  Ignore other sidecars in the same folder.
-- **Instruction would delete an entire section**: confirm with the user before removing a
-  major document section, as this is a large structural change.
-- **Ambiguous instruction**: apply the most sensible interpretation given the surrounding
-  document context and note the interpretation in your report.
-- **Sidecar references a missing document**: skip that sidecar, report the missing document
-  in the summary, and continue with remaining sidecars.
-- **Sidecar `doc` field and filename disagree**: treat the `doc` field as the source of truth.
-  Use the filename as fallback only if `doc` is absent. Report the mismatch in the summary.

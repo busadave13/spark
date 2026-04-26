@@ -16,35 +16,38 @@ what is being built, for whom, and why.
 - "Update PRD.md for the Mockery project"
 - "Review the PRD in the Mockery project"
 
+---
+
+## Required Inputs & Configuration
+
+**Required inputs** — provided at invocation:
+- **`{docs-root}`** — project specification folder (e.g., `.spark/my-project/docs`). Created if missing.
+- **`{projectName}`** — project name (e.g., "Mockery").
+- **`{template-path}`** — path to PRD template file.
+- **`{guide-path}`** — path to PRD section guide file.
+
+**Computed internally:**
+- **`{repo-root}`** — from `git rev-parse --show-toplevel`. User is asked if command fails.
+- **`{resolved-owner}`** — from `git config user.name`. User is asked if empty.
+
+Abort if `{template-path}` or `{guide-path}` cannot be read.
+
 ## Execution guidelines
 
-- **Parallel reads** — fetch all needed files in a single parallel tool call.
-- **Large file handling** — read large PRDs in focused chunks: metadata and status first, then only the sections needed for the current task.
-- **Minimise turns** — batch independent checks into one parallel call and reuse already loaded context instead of rereading the same files.
+- Fetch all needed files in single parallel calls.
+- For large PRDs: read metadata and headings first, then only needed sections.
+- Batch independent checks; reuse loaded context instead of re-reading.
 
 ---
 
 ## Step 1: Resolve project name and docs root
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
+1. Verify `{docs-root}` is valid; create folder structure if needed.
+2. Verify `{projectName}` — ask for clarification if ambiguous.
+3. Compute `{repo-root}` from `git rev-parse --show-toplevel` (ask user if fails).
+4. Compute `{resolved-owner}` from `git config user.name` (ask user if empty).
 
-1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 4.
-2. **Determine `{projectName}`** — extract the project name from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
-3. **Resolve `{docs-root}`**: If not provided by the orchestrator, ask the user for the project specification folder path. If the folder does not exist, create it.
-4. Set `{docs-root}` = the resolved project specification folder.
-
-If the user asks to review the PRD, skip the interview (Step 2), skip generation (Step 3), and go directly to the PRD review flow (Step 3a).
-
-### Resolve repo context
-
-1. Run `git rev-parse --show-toplevel` → capture `{repo-root}`.
-   - If the command fails (e.g. not inside a git repository), ask the user: "What is the root path of your repository?"
-2. Check for `{agents-root}/../spark.md` (sibling of the agents folder — resolves to `.github/spark.md` under a default install, `.copilot/spark.md` under an alternate install). If it exists, read it as optional project-level context. If it does not exist, continue.
-
-### Resolve Owner
-
-Run `git config user.name` to get the current user's name. Store as `{resolved-owner}`.
-If empty or fails, ask the user: "What name should appear as the document Owner?"
+If user asks to review the PRD, skip Step 2–3 and go directly to Step 3a.
 
 ---
 
@@ -76,15 +79,10 @@ questions into a single user prompt.
 
 ## Step 3.0: Load reference files (required — abort on miss)
 
-Before generating or reviewing, load the two references below in a single parallel call. Read them directly — **do NOT use subagents**. These paths are passed in by the Spark orchestrator from `spark.config.yaml`.
+Load `{template-path}` and `{guide-path}` in a single parallel call. Read them directly — **do NOT use subagents**.
 
-- `{template-path}` — the authoritative PRD template; follow its structure exactly
-- `{guide-path}` — detailed guidance for each section; consult for quality and anti-patterns
-
-If either path is missing or unreadable, stop and surface:
-> "⛔ PRD reference paths were not provided or could not be read. Check the Spark orchestrator handoff and `spark.config.yaml`."
-
-Do not proceed to Step 3 or Step 3a without both references loaded.
+If either file is missing or unreadable, abort:
+> "⛔ Reference files not found or unreadable. Verify `{template-path}` and `{guide-path}` are correct and accessible."
 
 ## Step 3: Generate or update PRD
 
@@ -134,148 +132,98 @@ Replace every `{placeholder}` with real content. If a section is not applicable,
   - Performance thresholds in NFRs ("respond within 3 seconds")
   - Compliance requirements ("must be HIPAA-compliant")
 
-- **Scope boundaries must be explicit** — agents interpret silence as permission
-- **Success criteria must be testable** — agents can generate test cases from them
-- **User personas must include goals and pain points** — not just role names
-- **No "Open Questions" section** — resolve decisions inline; use `[TBD]` for genuine gaps
-- **Do not invent missing sections** — if assumptions, risks, or glossary terms are unclear, ask a targeted follow-up instead of fabricating them
+- **Scope**: agents interpret silence as permission → be explicit
+- **Success criteria**: testable; agents generate tests from them
+- **Personas**: include goals + pain points, not just role names
+- **No open questions**: resolve inline; use `[TBD]` for genuine gaps
+- **Ask don't invent**: if assumptions/risks/glossary unclear, ask user not fabricate
 
-### First-line marker
+### First-line marker & Header
 
-Every document produced by this agent must begin with exactly:
-
+Every document must start with:
 ```
 <!-- SPARK -->
 ```
 
-on the first line — nothing before it, nothing else on that line. The document title and metadata header follow on subsequent lines.
-
-### Header
-
-The document header must open with:
+Followed by header:
 ```
-> **Version**: [version — see Version rules below]<br>
-> **Created**: [today's date]<br>
-> **Last Updated**: [today's date]<br>
-> **Owner**: [from project context Owner field]<br>
-> **Project**: [from project context Project name field]<br>
-> **Status**: [status — see Status rules below]
-> **Type**: PRD<br>
+> **Version**: [major.minor, e.g. 1.0]<br>
+> **Created**: [date]<br>
+> **Last Updated**: [date]<br>
+> **Owner**: [{resolved-owner}]<br>
+> **Project**: [{projectName}]<br>
+> **Status**: [Draft|Approved]<br>
+> **Type**: PRD
 ```
 
-### Version rules
+### Versioning
 
-- **New document**: use `1.0`
-- **Update pass**: read the current `**Version**` and increment the minor digit by 1.
-  After `X.9`, roll to `(X+1).0`. Examples: `1.0` → `1.1`, `1.9` → `2.0`, `2.9` → `3.0`.
-- **When to bump**: see Step 4 — the version is bumped exactly once per pass as the final action. Do not bump mid-flow.
-- Always update `**Last Updated**` to today's date when bumping
-
-### Status rules
-
-- **New document**: `Draft`
-- **Update pass**: always reset to `Draft`, even if previously `Approved`
-- Valid values: `Draft`, `Approved` (only set manually by the user)
+- **New**: `1.0`
+- **Update**: increment minor (e.g. `1.0` → `1.1`; `1.9` → `2.0`). Bump once per pass in Step 4 only. Update **Last Updated** date.
+- **Status**: `Draft` (new or after update); `Approved` (manual only)
 
 ### Output checklist
 
-Before finishing, verify:
-
-- [ ] First line of the document is exactly `<!-- SPARK -->`
-- [ ] Problem statement written from the user's perspective
-- [ ] Every core feature in §5 has at least one functional requirement in §6
-- [ ] Out of scope section has at least 3 items
-- [ ] Success criteria are observable or measurable
-- [ ] Assumptions and constraints are explicit and product-level
-- [ ] Key risks have concrete mitigations
-- [ ] Glossary defines domain terms a new reader would not know
-- [ ] No "Open Questions" section — all decisions resolved inline
-- [ ] No implementation decisions embedded
-- [ ] Version field is valid (`major.minor`, e.g. `1.0`), bumped on updates
-- [ ] Status field is valid (`Draft` or `Approved`), set correctly
-- [ ] No placeholder text remaining (except intentional `[TBD]`)
+- [ ] Starts with `<!-- SPARK -->` and valid header block
+- [ ] Problem from user perspective; feature↔requirement mapping in §5↔§6
+- [ ] Out of scope ≥3 items; success criteria observable/measurable
+- [ ] Assumptions/constraints product-level; risks have mitigations
+- [ ] Glossary covers domain terms; no open questions or `[TBD]` (except intentional)
+- [ ] No implementation details; version/status fields valid
 
 ---
 
 ## Step 3a: Review PRD
 
-This step runs only when the user explicitly asks to review the PRD. It validates the existing `PRD.md` against `{template-path}` and `{guide-path}` without rewriting it.
-
-The references required for this step are loaded by Step 3.0. Re-use them from context — do not re-read here.
-
-Read `{docs-root}/PRD.md` in full.
-
-Do not bump the version here — Step 4 handles the single version bump after all changes are complete.
+Validate existing `PRD.md` against `{template-path}` and `{guide-path}` without rewriting. Use Step 3.0 references; do not re-read. Do not bump version here (Step 4 handles versioning).
 
 ### Review checks
 
-Compare the PRD against `{template-path}` and `{guide-path}`. Check for:
-
-1. **Missing sections** — every numbered section (1–12) and the header block must be present.
-2. **Empty or placeholder sections** — sections that contain only template placeholders (`{...}`) or are blank.
-3. **Header completeness** — all metadata fields (Type, Version, Created, Last Updated, Owner, Project, Status) are present and have valid values.
-4. **Version / status validity** — Version follows `major.minor` format; Status is `Draft` or `Approved`.
-5. **Scope gaps** — Out of scope has fewer than 3 items, or in-scope capabilities lack matching features in §5.
-6. **Feature ↔ requirement mapping** — every core feature in §5 should have at least one functional requirement in §6.
-7. **Persona quality** — personas in §3 include context, goal, pain point, and technical level.
-8. **User story traceability** — stories in §10 reference personas from §3 and features from §5.
-9. **Success criteria testability** — outcomes in §2 are observable or measurable, not vague.
-10. **Risks without mitigations** — risks in §11 that have placeholder or missing mitigations.
-11. **Implementation leakage** — technology choices that are not justified as hard product constraints.
-12. **Unresolved TBDs** — any `[TBD]` markers remaining in the document.
-13. **Glossary coverage** — domain terms used in the PRD that are not defined in §12.
+1. All 12 sections + header present
+2. No empty/placeholder sections
+3. Header complete: Type, Version (`major.minor`), Created, Last Updated, Owner, Project, Status (`Draft|Approved`)
+4. Scope: Out of scope ≥3 items; features in §5 have requirements in §6
+5. Personas: include context, goal, pain point, technical level
+6. Stories: reference personas (§3) and features (§5)
+7. Success criteria: observable/measurable (§2)
+8. Risks: all have mitigations (§11)
+9. Implementation: no tech choices unless hard product constraints
+10. TBDs: all resolved
+11. Glossary: covers all domain terms used
 
 ### Present findings
 
-Display a numbered summary table of inconsistencies found:
+Display inconsistencies in a table:
 
-```
 | # | Section | Issue | Severity |
 |---|---------|-------|----------|
-| 1 | §5/§6   | Feature "X" has no functional requirement | High |
-| 2 | §3      | Persona "Y" missing pain point | Medium |
-| ...                                                    |
-```
+| 1 | §5/§6   | Feature has no requirement | High |
+| 2 | §3      | Persona missing pain point | Medium |
 
-Severity levels:
-- **High** — structural gap that would block downstream architecture or feature specs.
-- **Medium** — quality issue that reduces clarity or agent-readability.
-- **Low** — minor style or completeness suggestion.
+Severity: **High** (blocks downstream specs), **Medium** (clarity/readability), **Low** (style).
 
-After presenting the table, ask the user which inconsistencies to resolve. Accept:
-- Specific numbers (e.g. "1, 3, 5")
-- "all" to resolve everything
-- "none" to skip resolution
+Ask which to resolve: specific numbers ("1, 3"), "all", or "none".
 
-For each inconsistency the user chooses to resolve:
-- If the fix is clear and unambiguous, apply it directly to `PRD.md`.
-- If clarification is needed, ask a targeted question before applying the change.
+For each chosen:
+- Apply directly if fix is obvious
+- Ask clarifying question if needed
 
-After applying fixes, proceed to Step 4. Do not bump the version here — Step 4 handles versioning after all changes are complete.
-
-If the user answers "none", proceed to Step 4.
-
-If no inconsistencies are found, tell the user the PRD is consistent with the provided template and guide, then proceed to Step 4.
+After fixing, proceed to Step 4 (do not bump version). If no issues found, note PRD is consistent and proceed to Step 4.
 
 ---
 
-## Step 4: Resolve TBDs and finalise version
+## Step 4: Resolve TBDs and bump version
 
-If the review flow (Step 3a) completed with no changes applied (no comments resolved, no inconsistencies fixed), skip the TBD scan and version bump — proceed directly to Step 5.
+If Step 3a made no changes, skip TBD scan and version bump → go to Step 5.
 
-After writing or updating the PRD, scan for `[TBD]` markers.
+**Scan for `[TBD]` markers:**
+- None found → proceed to version bump
+- Found → present to user; update PRD; re-scan until resolved
 
-- **None found** → proceed to the version bump below.
-- **Found** → present them to the user. Once answered, update
-  the PRD with the answers and re-scan. Repeat until all `[TBD]` markers are resolved.
-
-### Final version bump
-
-This is the single place where the version is bumped. After all PRD changes in this pass are complete (comment resolution, review fixes, TBD resolution, generation updates — whatever combination applied), bump the version exactly once:
-
-- If `PRD.md` was **created** in this pass, the version is already `1.0`. Do not bump.
-- If `PRD.md` was **updated** in this pass (any change at all), increment the minor version by 1 and update `**Last Updated**` to today's date. After `X.9`, roll to `(X+1).0` (e.g. `1.9` → `2.0`). Reset `**Status**` to `Draft`.
-- If `PRD.md` was **not changed** (e.g. review found no issues, no comments, no TBDs), do not bump.
+**Version bump** (only once, here, when all changes complete):
+- **Created**: already `1.0`, do not bump
+- **Updated**: increment minor (e.g. `1.0` → `1.1`; `1.9` → `2.0`). Update **Last Updated** date. Reset **Status** to `Draft`.
+- **No changes**: do not bump
 
 Proceed to Step 5.
 
@@ -283,7 +231,5 @@ Proceed to Step 5.
 
 ## Step 5: Report completion
 
-Report the outcome:
-
-- If `PRD.md` was **created**: `"✅ PRD written to {docs-root}/PRD.md."`
-- If `PRD.md` was **updated**: `"✅ PRD updated at {docs-root}/PRD.md."`
+- **Created**: `"✅ PRD written to {docs-root}/PRD.md."`
+- **Updated**: `"✅ PRD updated at {docs-root}/PRD.md."` 

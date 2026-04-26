@@ -12,25 +12,29 @@ checklist. Produces a findings table and reports issues by severity.
 
 ---
 
+## Required Inputs & Configuration
+
+**Input** — one of:
+- Path to PRD.md file (e.g., `.spark/my-project/docs/PRD.md`)
+- Docs root directory → resolves to `{directory}/PRD.md`
+- None → ask user which project to review
+
+---
+
 ## Step 1: Resolve path
 
-Accept a path to `PRD.md` or a docs root directory.
+Resolve to `{prd-path}`:
+- If path ends with `PRD.md`, use as-is
+- If path is directory, append `/PRD.md`
+- If no input, ask user which project
 
-- If the path ends with `PRD.md`, that file is `{prd-path}`.
-- If the path is a directory, `{prd-path}` = `{directory}/PRD.md`.
-- If no path is given, ask the user which project to review, then use the provided `{docs-root}` folder path or ask the user for the PRD location.
-
-Read `{prd-path}` in full before running any checks.
+Read `{prd-path}` in full before running checks.
 
 ---
 
 ## Step 2: Run review checks
 
-Evaluate each check as **PASS** or **FAIL**.
-
-A check is **FAIL only when its exact FAIL condition is met**. Do not infer, extrapolate,
-or flag issues not listed. If a section is genuinely absent from the document, every
-check targeting that section is FAIL.
+Evaluate each as **PASS** or **FAIL**. A check **FAIL only when its exact FAIL condition is met** — do not infer or flag issues not listed. Missing sections cause all related checks to FAIL.
 
 ### Check table
 
@@ -62,10 +66,8 @@ check targeting that section is FAIL.
 
 ### Severity mapping
 
-Apply these mechanically — do not override based on document context.
-
 | Severity | Check IDs |
-|----------|-----------|
+|----------|--------|
 | **High** | R01, R02, R03, R04, R12, R13, R20, R23 |
 | **Medium** | R05, R06, R07, R08, R09, R10, R11, R14, R15, R16, R17, R18, R19 |
 | **Low** | R21, R22 |
@@ -74,27 +76,19 @@ Apply these mechanically — do not override based on document context.
 
 ## Step 3: Present findings
 
-List only FAIL results, sorted by Severity (High first), then by ID ascending within each group.
+List FAIL results only, sorted by Severity (High→Medium→Low), then ID ascending:
 
-```
 | ID  | Section | Issue | Severity |
 |-----|---------|-------|----------|
-| R12 | §5/§6   | Feature "Recording" has no functional requirement in §6 | High |
-| R09 | §3      | Persona "Developer" missing pain point | Medium |
-```
+| R12 | §5/§6   | Feature has no requirement in §6 | High |
+| R09 | §3      | Persona missing pain point | Medium |
 
-If all checks pass, report: `"✅ PRD passed all review checks."` and stop.
+If all pass: `"✅ PRD passed all review checks."` and stop.
 
 ---
 
 ## Step 4: Report completion
 
-```
-✅ PRD review complete.
+✅ PRD review complete. Checks run: 23; Issues found: {N}
 
-- Checks run: 23
-- Issues found: {N}
-```
-
-This agent is read-only. It does not apply fixes or modify the PRD.
-To apply fixes, use `prd-editor`.
+**Read-only agent** — does not modify the PRD. To apply fixes, use `prd-editor`.
