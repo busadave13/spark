@@ -105,7 +105,6 @@ For each comment:
 If any comments were applied:
 1. Increment `**Version**` minor digit (`1.0`→`1.1`, `1.9`→`2.0`).
 2. Set `**Last Updated**` to today's date.
-3. Reset `**Status**` to `Draft`.
 
 Skip if no comments were applied.
 

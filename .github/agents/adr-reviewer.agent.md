@@ -7,23 +7,24 @@ user-invocable: false
 
 # ADR Reviewer
 
-Validates one or more `ADR-*.md` files against the spark ADR template using a
-deterministic checklist. Produces a per-file findings table and reports issues by severity.
+Validates `ADR-*.md` files against the spark ADR template using deterministic checks (D01–D12). Reports issues by severity. Read-only — does not modify files.
 
-This skill reviews ADR files only. To review `ARCHITECTURE.md`, use `architecture-reviewer`.
+To review `ARCHITECTURE.md`, use `architecture-reviewer`.
+
+## Input variables
+
+| Variable | Description |
+|---|---|
+| `{docs-root}` | Path to the project specification folder containing `ARCHITECTURE.md` and `adr/` |
 
 ---
 
 ## Step 1: Resolve path and collect ADR files
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
-
-- If `{docs-root}` was provided as input (e.g., by the Spark orchestrator), use it as-is.
-- If a project name is provided (e.g., `Mockery`), use the provided `{docs-root}` folder path or ask the user for the ADR folder location.
-- If a full path to a project specification folder is provided, use it directly.
-- If the path is a specific `ADR-*.md` file, review that single file.
-- If the path points to an `adr/` directory, review all `ADR-*.md` files within it.
-- If no path is given, ask the user which project to review.
+- If `{docs-root}` was provided, use it as-is.
+- If a specific `ADR-*.md` path is given, review that single file.
+- If an `adr/` directory path is given, review all `ADR-*.md` files within it.
+- If no path is given, ask the user.
 
 In a single parallel call, read:
 - all resolved `ADR-*.md` files in full

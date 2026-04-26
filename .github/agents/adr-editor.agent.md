@@ -9,47 +9,38 @@ user-invocable: false
 
 Creates one or more ADR files and patches the Decision Log table in `ARCHITECTURE.md`.
 
-**What this skill does:**
-- Writes `{docs-root}/adr/ADR-{NNNN}-{slug}.md` for each new decision
-- Appends a row to the Decision Log table in `{docs-root}/ARCHITECTURE.md`
-- Optionally adds a bullet to the Key Architectural Decisions section of ARCHITECTURE.md
+## Input variables
 
-**What this skill does NOT do:**
-- Rewrite or restructure ARCHITECTURE.md — it only patches specific sections
-- Create or modify PRD.md — use `prd-editor` for that
+Set these before running. The orchestrator may supply them; otherwise ask the user.
 
-## Usage examples
+| Variable | Description |
+|---|---|
+| `{docs-root}` | Path to the project specification folder containing `ARCHITECTURE.md` |
+| `{template-path}` | Path to the ADR template file |
+| `{guide-path}` | Path to the ADR template guide file |
+| `{project-name}` | Name of the project |
+| `{resolved-owner}` | Author name (default: `git config user.name`) |
 
-- "Write an ADR for using Redis as our caching layer"
-- "Create an ADR — we decided to use MCP over REST"
-- "Document this decision: we will use PostgreSQL instead of MongoDB"
-- "Add an ADR for X"
-- "Record our decision about Y"
-- "We decided to use Z — write it up"
-- "Capture this architecture decision"
-- "ADR for the new approach"
-- "Retroactive ADR for our authentication choice"
+## Scope
+
+- **Does:** Write `{docs-root}/adr/ADR-{NNNN}-{slug}.md`, patch Decision Log and Key Architectural Decisions in `ARCHITECTURE.md`
+- **Does not:** Rewrite ARCHITECTURE.md structure or modify PRD.md
 
 ## Execution guidelines
 
-- **Parallel reads** — fetch all needed files in a single parallel tool call.
-- **Large file handling** — read large ARCHITECTURE.md in focused chunks: metadata and Decision Log first, then only the sections needed for the current task.
-- **Minimise turns** — batch independent checks into one parallel call and reuse already loaded context instead of rereading the same files.
+- Fetch all needed files in a single parallel tool call
+- Read large ARCHITECTURE.md in focused chunks (metadata + Decision Log first)
+- Batch independent checks; reuse loaded context
 
 ---
 
 ## Step 1: Resolve paths
 
-Folder paths are provided by the Spark orchestrator via `spark.config.yaml`. Do not hardcode `.spark` folder names.
-
-1. **If `{docs-root}` was provided as input** (e.g., by the Spark orchestrator), use it as-is — skip to item 5.
+1. If `{docs-root}` was provided, skip to item 4.
 2. Run `git rev-parse --show-toplevel` to find `{repo-root}`. If that fails, ask the user.
-3. Determine `{projectName}` from the user's request or path (e.g., "Mockery"). If ambiguous, ask the user.
-4. If `{docs-root}` was not provided, ask the user for the project specification folder path. If the folder does not exist, tell the user that ARCHITECTURE.md must exist
-   before ADRs can be added and suggest running `architecture-editor` first.
-5. Verify `{docs-root}/ARCHITECTURE.md` exists. If it does not, stop and direct the user to
-   `architecture-editor` to create the architecture document first.
-6. Run `git config user.name` → `{resolved-owner}`. If empty, ask the user.
+3. Ask the user for the project specification folder path. If the folder does not exist, tell the user ARCHITECTURE.md must exist and suggest running `architecture-editor` first.
+4. Verify `{docs-root}/ARCHITECTURE.md` exists. If not, stop and direct the user to `architecture-editor`.
+5. Run `git config user.name` → `{resolved-owner}`. If empty, ask the user.
 
 ---
 
@@ -71,21 +62,16 @@ Report what was found:
 
 ## Step 3: Interview the user
 
-Ask only what is needed. Extract as much as possible from ARCHITECTURE.md and the codebase
-before asking. Typical questions:
+Ask only what is needed — extract as much as possible from ARCHITECTURE.md and the codebase first. Skip questions the user already answered inline.
 
-1. **What is the decision?** (one clear sentence: "We will use X for Y")
+1. **What is the decision?** ("We will use X for Y")
 2. **What alternatives were considered?** (at least 2)
-3. **Why was this option chosen over the others?** (key deciding factors)
-4. **What are the main consequences or accepted trade-offs?**
-5. **Is this a new decision or retroactive?** (affects status)
-6. **Under what conditions should this be revisited?** (optional)
+3. **Why was this option chosen?** (key deciding factors)
+4. **What are the consequences or trade-offs?**
+5. **New or retroactive?** (affects status)
+6. **Revisit conditions?** (optional)
 
-If the user provided answers inline with their request (e.g., "write an ADR — we decided to use
-Redis for caching because of latency, alternatives were Memcached and in-memory"), skip the
-questions you already have answers for.
-
-For multiple decisions at once, collect the above for each before writing anything.
+For multiple decisions, collect all answers before writing.
 
 ---
 
@@ -200,7 +186,4 @@ Then prompt the user:
 
 ## Reference files
 
-| File | When to read |
-|---|---|
-| `{template-path}` | Before writing any ADR — exact section order and formatting |
-| `{guide-path}` | When the decision involves significant trade-offs or multiple rejected alternatives
+Read `{template-path}` before writing any ADR. Read `{guide-path}` when the decision involves significant trade-offs or multiple rejected alternatives.
