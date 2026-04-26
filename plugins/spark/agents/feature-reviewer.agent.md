@@ -25,7 +25,9 @@ The agent derives `{docs-root}` from the provided path (see Step 1). If no path 
 
 Accept a path to a specific feature file, the `feature/` directory, or a docs root.
 
-- Path ends with `FEAT-*.md` → review that single file. `{docs-root}` = grandparent of the file (parent of `feature/`).
+**Anti-scan rule:** When a path is provided in the prompt, use it directly. Do NOT search the filesystem for other feature directories or present a list of discovered projects.
+
+- Path ends with `FEAT-*.md`→ review that single file. `{docs-root}` = grandparent of the file (parent of `feature/`).
 - Path ends with `feature/` or is a directory named `feature` → review all `FEAT-*.md` within it. `{docs-root}` = parent.
 - Any other directory → look for `{path}/feature/FEAT-*.md`. If found, `{docs-root}` = `{path}`.
 - No path given → ask the user which project to review.

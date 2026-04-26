@@ -26,6 +26,8 @@ To review `ARCHITECTURE.md`, use `architecture-reviewer`.
 - If an `adr/` directory path is given, review all `ADR-*.md` files within it.
 - If no path is given, ask the user.
 
+**Anti-scan rule:** When a path is provided in the prompt, use it directly. Do NOT search the filesystem for other ADR directories or present a list of discovered projects.
+
 In a single parallel call, read:
 - all resolved `ADR-*.md` files in full
 - `{docs-root}/ARCHITECTURE.md` Decision Log section only (read-only — needed for D11)

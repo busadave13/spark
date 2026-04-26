@@ -18,6 +18,8 @@ Validates `ARCHITECTURE.md` against the spark architecture template using determ
 
 **Resolution:** If input ends with `ARCHITECTURE.md`, use it as `{arch-path}`. If input is a directory, set `{docs-root}` = that directory and `{arch-path}` = `{docs-root}/ARCHITECTURE.md`. If no input, ask the user for the project or path.
 
+**Anti-scan rule:** When a path is provided in the prompt, use it directly. Do NOT search the filesystem for other ARCHITECTURE.md files or present a list of discovered files.
+
 ### Reference reads (single parallel call)
 
 - `{arch-path}` — full contents

@@ -12,23 +12,22 @@ checklist. Produces a findings table and reports issues by severity.
 
 ---
 
-## Required Inputs & Configuration
+## Config
 
-**Input** — one of:
-- Path to PRD.md file (e.g., `.spark/my-project/docs/PRD.md`)
-- Docs root directory → resolves to `{directory}/PRD.md`
-- None → ask user which project to review
+### Variables
+
+- `{prd-path}` — path to `PRD.md`
+- `{docs-root}` — parent directory of `{prd-path}`
+
+**Resolution:** If input ends with `PRD.md`, use it as `{prd-path}`. If input is a directory, set `{docs-root}` = that directory and `{prd-path}` = `{docs-root}/PRD.md`. If no input is provided in the prompt, ask the user for the project or path.
+
+**Anti-scan rule:** When a path is provided in the prompt, use it directly. Do NOT search the filesystem for other PRD files or present a list of discovered files. Only fall back to asking the user when genuinely no path or project name appears anywhere in the prompt.
 
 ---
 
-## Step 1: Resolve path
+## Step 1: Resolve path & read
 
-Resolve to `{prd-path}`:
-- If path ends with `PRD.md`, use as-is
-- If path is directory, append `/PRD.md`
-- If no input, ask user which project
-
-Read `{prd-path}` in full before running checks.
+Resolve `{prd-path}` and `{docs-root}` per Config. Read `{prd-path}` in full before running checks.
 
 ---
 
