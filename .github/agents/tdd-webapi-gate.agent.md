@@ -1,5 +1,5 @@
 ---
-name: tdd-dotnet-webapi-gate
+name: tdd-webapi-gate
 description: "Gate phase agent for dotnet-webapi TDD. Verifies traceability, structural completeness, and reviewer results from a compact execution brief, then returns a machine-readable gate outcome."
 tools: [read, execute, search, todo, agent]
 user-invocable: false

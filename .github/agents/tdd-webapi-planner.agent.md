@@ -1,5 +1,5 @@
 ---
-name: tdd-dotnet-webapi-planner
+name: tdd-webapi-planner
 description: "Planning phase agent for dotnet-webapi TDD. Resolves AC ambiguity, updates the feature spec with concrete values, and writes the draft testplan from a compact execution brief."
 tools: [read, edit, todo]
 user-invocable: false

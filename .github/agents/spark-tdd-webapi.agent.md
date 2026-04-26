@@ -1,5 +1,5 @@
 ---
-name: SPARK TDD
+name: SPARK TDD WEBAPI
 description: "Coordinator agent for dotnet-webapi feature implementation. Orchestrates context, planning, implementation, and gate subagents with a compact execution brief so each phase loads only the context it needs. Reads Approved feature specs, writes testplan/tests/code, invokes the resolved reviewer, and finalizes feature status via the resolved editor agent."
 tools: [execute, read, agent, edit, search, todo, vscode/memory]
 user-invocable: true
@@ -12,11 +12,11 @@ Set the variables below before invoking. These are not resolved from `spark.conf
 ## Variable Configuration
 
 **Agent names:**
-- `{context-agent}` = (e.g. `tdd-dotnet-webapi-context`)
-- `{planner-agent}` = (e.g. `tdd-dotnet-webapi-planner`)
-- `{implementer-agent}` = (e.g. `tdd-dotnet-webapi-implementer`)
-- `{gate-agent}` = (e.g. `tdd-dotnet-webapi-gate`)
-- `{reviewer-agent}` = (e.g. `tdd-reviewer`)
+- `{context-agent}` = (e.g. `tdd-webapi-context`)
+- `{planner-agent}` = (e.g. `tdd-webapi-planner`)
+- `{implementer-agent}` = (e.g. `tdd-webapi-implementer`)
+- `{gate-agent}` = (e.g. `tdd-webapi-gate`)
+- `{reviewer-agent}` = (e.g. `tdd-webapi-reviewer`)
 - `{scaffold-skill}` = (e.g. `dotnet-webapi-project`)
 - `{feature-editor-agent}` = (e.g. `feature-editor`)
 
@@ -38,11 +38,11 @@ Set the variables below before invoking. These are not resolved from `spark.conf
 
 **Example** (Mockery project):
 ```
-{context-agent} = tdd-dotnet-webapi-context
-{planner-agent} = tdd-dotnet-webapi-planner
-{implementer-agent} = tdd-dotnet-webapi-implementer
-{gate-agent} = tdd-dotnet-webapi-gate
-{reviewer-agent} = tdd-reviewer
+{context-agent} = tdd-webapi-context
+{planner-agent} = tdd-webapi-planner
+{implementer-agent} = tdd-webapi-implementer
+{gate-agent} = tdd-webapi-gate
+{reviewer-agent} = tdd-webapi-reviewer
 {scaffold-skill} = dotnet-webapi-project
 {feature-editor-agent} = feature-editor
 {repo-root} = /Users/you/repos/myproject
@@ -54,9 +54,9 @@ Set the variables below before invoking. These are not resolved from `spark.conf
 {instructions-root} = ./.spark/Mockery/instructions
 {agents-root} = plugins/spark/agents
 {skills-root} = plugins/spark/skills
-{brief-reference} = plugins/spark/agents/references/tdd-execution-brief-template.md
-{testplan-template-reference} = plugins/spark/agents/references/testplan-template.md
-{reviewer-checklist-reference} = plugins/spark/agents/references/tdd-reviewer-checklist.md
+{brief-reference} = plugins/spark/agents/references/tdd-webapi-execution-brief-template.md
+{testplan-template-reference} = plugins/spark/agents/references/tdd-webapi-testplan-template.md
+{reviewer-checklist-reference} = plugins/spark/agents/references/tdd-webapi-reviewer-checklist.md
 ```
 
 ## Input Parameters

@@ -1,6 +1,6 @@
 # TDD Reviewer Checklist
 
-This file is the normative source for `tdd-reviewer` checks. Evaluate only the
+This file is the normative source for `tdd-webapi-reviewer` checks. Evaluate only the
 checks listed here. Apply each FAIL condition and severity mechanically.
 
 | ID | Severity | FAIL condition |

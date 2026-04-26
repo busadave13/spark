@@ -1,5 +1,5 @@
 ---
-name: tdd-dotnet-webapi-implementer
+name: tdd-webapi-implementer
 description: "Implementation phase agent for dotnet-webapi TDD. Uses an approved execution brief and testplan to run stubs, red/green/refactor, and structural work without reloading full docs."
 tools: [execute, read, edit, search, todo]
 user-invocable: false

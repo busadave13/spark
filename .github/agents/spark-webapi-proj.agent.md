@@ -1,11 +1,11 @@
 ---
-name: SPARK DOTNET WEBAPI PROJECT
+name: SPARK WEBAPI PROJ
 description: "Creates a new .Net WebAPI project by reading the project's ARCHITECTURE.md from .spark/{projectName} and invoking the dotnet-webapi-project skill."
 tools: [execute, read, edit, search, vscode/memory]
 user-invocable: true
 ---
 
-# SPARK DOTNET WEBAPI PROJECT
+# SPARK WEBAPI PROJ
 
 You scaffold dotnet-webapi projects. Be concise. No unnecessary output.
 

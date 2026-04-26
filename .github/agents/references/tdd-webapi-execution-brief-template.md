@@ -1,7 +1,7 @@
 # TDD Execution Brief
 
 Use this as the compact handoff contract between the resolved TDD coordinator, its
-phase agents, and `tdd-reviewer`.
+phase agents, and `tdd-webapi-reviewer`.
 
 ## Goal
 
@@ -93,7 +93,7 @@ suite_digest:
   passed:
   failed:
   notable_failures: []
-# Cached suite result. Gate and tdd-reviewer consume this when code_sha still matches
+# Cached suite result. Gate and tdd-webapi-reviewer consume this when code_sha still matches
 # the current on-disk state of the impl+test files, and skip re-running the suite.
 # Implementer writes/refreshes; context phase leaves nulls.
 suite_cache:

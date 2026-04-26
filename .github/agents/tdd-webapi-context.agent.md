@@ -1,5 +1,5 @@
 ---
-name: tdd-dotnet-webapi-context
+name: tdd-webapi-context
 description: "Read-only phase agent for dotnet-webapi TDD. Builds a compact execution brief from the approved feature, architecture, relevant ADRs, repo instructions, and project inventory."
 tools: [execute, read, search, todo]
 user-invocable: false

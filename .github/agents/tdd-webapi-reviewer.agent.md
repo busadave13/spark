@@ -1,5 +1,5 @@
 ---
-name: tdd-reviewer
+name: tdd-webapi-reviewer
 description: "Read-only reviewer for test suites. Validates one or more FEAT-NNN test suites against the shared Spark TDD checklist. Accepts either a docs-root/feature path or a compact execution brief, runs the suite in read-only mode, and returns findings plus a machine-readable gate summary."
 tools: [execute, read, search, todo]
 user-invocable: false
@@ -16,7 +16,7 @@ Edit these paths before use:
 
 | Variable                       | Default                                                                       | Description                      |
 |--------------------------------|-------------------------------------------------------------------------------|----------------------------------|
-| `{reviewer-checklist-reference}` | `plugins/spark/agents/references/tdd-reviewer-checklist.md` | Normative checklist of check IDs, FAIL conditions, and severities |
+| `{reviewer-checklist-reference}` | `plugins/spark/agents/references/tdd-webapi-reviewer-checklist.md` | Normative checklist of check IDs, FAIL conditions, and severities |
 | `{docs-root}`                    | `.spark/{project-name}`                                                     | Root folder containing `feature/` and testplan files |
 
 ## Rules
@@ -79,7 +79,7 @@ End with a fenced JSON block:
 
 ```json
 {
-  "reviewer": "tdd-reviewer",
+  "reviewer": "tdd-webapi-reviewer",
   "features_reviewed": ["FEAT-003-password-reset"],
   "counts": { "block": 0, "warn": 2, "info": 0 },
   "findings": [
