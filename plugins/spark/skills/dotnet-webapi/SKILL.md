@@ -33,7 +33,7 @@ $slnPath          = "$projectRoot\{projectName}.sln"
 Skip any project whose directory already contains a `.csproj`. Otherwise run:
 
 ```
-dotnet new webapi    --name {projectName}                  --output {projectRoot}/{projectName}                  --use-minimal-apis --no-openapi
+dotnet new webapi    --name {projectName}                  --output {projectRoot}/{projectName}                  --use-minimal-apis
 dotnet new classlib  --name {projectName}.Shared           --output {projectRoot}/{projectName}.Shared
 dotnet new xunit     --name {projectName}.UnitTests        --output {projectRoot}/{projectName}.UnitTests
 dotnet new xunit     --name {projectName}.IntegrationTests --output {projectRoot}/{projectName}.IntegrationTests
